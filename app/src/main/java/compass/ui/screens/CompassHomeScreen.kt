@@ -51,50 +51,70 @@ fun CompassHomeScreen(
             )
         }
 
-        Text(
-            text = state.altitude?.let(Formatters::formatAltitude) ?: "—",
-            color = IosPrimaryText,
-            fontSize = 34.sp,
-            fontWeight = FontWeight.Light,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            text = stringResource(R.string.altitude_label),
-            color = IosSecondaryText,
-            fontSize = 13.sp,
-        )
+        if (state.showSatelliteSkyPlot) {
+            SatelliteSkyPlot(
+                satellites = state.satellites,
+                deviceHeadingDegrees = state.headingDegrees,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        } else {
+            CompassDial(
+                headingDegrees = state.headingDegrees,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = Formatters.formatHeading(state.headingDegrees),
             color = IosPrimaryText,
-            fontSize = 64.sp,
+            fontSize = 48.sp,
             fontWeight = FontWeight.Thin,
         )
         Text(
             text = Formatters.cardinalDirection(state.headingDegrees),
             color = IosSecondaryText,
-            fontSize = 22.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        if (state.showSatelliteSkyPlot) {
-            SatelliteSkyPlot(
-                satellites = state.satellites,
-                deviceHeadingDegrees = state.headingDegrees,
-                modifier = Modifier.weight(1f),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (!state.hasGpsFix) {
+                Text(
+                    text = stringResource(R.string.waiting_for_gps),
+                    color = IosSecondaryText,
+                    fontSize = 14.sp,
+                )
+            }
+            CoordinateLine(
+                label = stringResource(R.string.latitude_label),
+                value = state.latitude?.let(Formatters::formatCoordinate) ?: "—",
             )
-        } else {
-            CompassDial(
-                headingDegrees = state.headingDegrees,
-                modifier = Modifier.weight(1f),
+            CoordinateLine(
+                label = stringResource(R.string.longitude_label),
+                value = state.longitude?.let(Formatters::formatCoordinate) ?: "—",
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        CoordinateLine(
+            label = stringResource(R.string.altitude_label),
+            value = state.altitude?.let(Formatters::formatAltitude) ?: "—",
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -128,43 +148,16 @@ fun CompassHomeScreen(
                 ),
             )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            if (!state.hasGpsFix) {
-                Text(
-                    text = stringResource(R.string.waiting_for_gps),
-                    color = IosSecondaryText,
-                    fontSize = 14.sp,
-                )
-            }
-            CoordinateLine(
-                label = stringResource(R.string.latitude_label),
-                value = state.latitude?.let(Formatters::formatCoordinate) ?: "—",
-            )
-            CoordinateLine(
-                label = stringResource(R.string.longitude_label),
-                value = state.longitude?.let(Formatters::formatCoordinate) ?: "—",
-            )
-            CoordinateLine(
-                label = stringResource(R.string.velocity_label),
-                value = state.velocityKmh,
-            )
-            CoordinateLine(
-                label = stringResource(R.string.satellites_label),
-                value = stringResource(R.string.satellite_count_format, state.satelliteCount),
-            )
-        }
     }
 }
 
 @Composable
-private fun CoordinateLine(label: String, value: String) {
-    Column {
+private fun CoordinateLine(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
         Text(text = label, color = IosSecondaryText, fontSize = 12.sp)
         Text(text = value, color = IosPrimaryText, fontSize = 17.sp, fontWeight = FontWeight.Normal)
     }
