@@ -1,6 +1,7 @@
 package compass.ui
 
 import compass.domain.BreadcrumbPoint
+import compass.domain.SatelliteInfo
 
 data class CompassUiState(
     val headingDegrees: Float = 0f,
@@ -9,6 +10,8 @@ data class CompassUiState(
     val altitude: Double? = null,
     val velocityKmh: String = "—",
     val satelliteCount: Int = 0,
+    val satellites: List<SatelliteInfo> = emptyList(),
+    val showSatelliteSkyPlot: Boolean = false,
     val targetLatitudeInput: String = "",
     val targetLongitudeInput: String = "",
     val targetLatitude: Double? = null,

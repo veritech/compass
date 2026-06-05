@@ -58,9 +58,18 @@ class CompassViewModel(
             }
         }
 
-        satelliteProvider.start { count ->
-            updateState { copy(satelliteCount = count) }
+        satelliteProvider.start { status ->
+            updateState {
+                copy(
+                    satelliteCount = status.satellitesInFix,
+                    satellites = status.satellites,
+                )
+            }
         }
+    }
+
+    fun setShowSatelliteSkyPlot(enabled: Boolean) {
+        updateState { copy(showSatelliteSkyPlot = enabled) }
     }
 
     fun stopSensors() {

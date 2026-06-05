@@ -18,6 +18,9 @@
     <string name="location_permission_required">Location permission is required for compass and GPS data.</string>
     <string name="waiting_for_gps">Waiting for GPS fix…</string>
     <string name="satellite_count_format">%1$d in use</string>
+    <string name="satellite_visible_count_format">%1$d visible, %2$d in use</string>
+    <string name="show_satellite_sky_plot">Show satellite sky plot</string>
+    <string name="satellite_sky_plot_legend">Green = used for fix · Center = above you · Edge = horizon</string>
     <string name="tap_map_hint">Tap the map to pick a target location.</string>
     <string name="bearing_value">Bearing: %1$s</string>
     <string name="recording_trail_points">Recording — %1$d points</string>

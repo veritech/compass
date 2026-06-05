@@ -2,6 +2,8 @@ package compass.ui
 
 import compass.data.BreadcrumbTracker
 import compass.domain.LocationSnapshot
+import compass.domain.SatelliteInfo
+import compass.domain.SatelliteStatus
 import compass.provider.CompassProvider
 import compass.provider.HeadingListener
 import compass.provider.LocationListener
@@ -36,13 +38,32 @@ class CompassViewModelTest {
                 hasFix = true,
             ),
         )
-        satelliteProvider.emitCount(7)
+        satelliteProvider.emitStatus(
+            SatelliteStatus(
+                satellitesInFix = 1,
+                satellites = listOf(
+                    SatelliteInfo("GPS", 12, 45f, 120f, 32f, usedInFix = true),
+                    SatelliteInfo("Galileo", 7, 30f, 200f, 24f, usedInFix = false),
+                ),
+            ),
+        )
 
         assertEquals(45f, state.headingDegrees, 0.01f)
         assertEquals(51.5, state.latitude!!, 0.0001)
         assertEquals(-0.12, state.longitude!!, 0.0001)
         assertEquals(25.0, state.altitude!!, 0.0001)
-        assertEquals(7, state.satelliteCount)
+        assertEquals(1, state.satelliteCount)
+        assertEquals(2, state.satellites.size)
+    }
+
+    @Test
+    fun togglesSatelliteSkyPlot() {
+        val viewModel = createViewModel()
+        var state = CompassUiState()
+        viewModel.setOnStateChanged { state = it }
+
+        viewModel.setShowSatelliteSkyPlot(true)
+        assertEquals(true, state.showSatelliteSkyPlot)
     }
 
     @Test
@@ -148,7 +169,7 @@ private class FakeSatelliteProvider : SatelliteProvider {
         listener = null
     }
 
-    fun emitCount(count: Int) {
-        listener?.onSatelliteCount(count)
+    fun emitStatus(status: SatelliteStatus) {
+        listener?.onSatelliteStatus(status)
     }
 }
