@@ -17,15 +17,28 @@ class AndroidCompassProvider(
     private var listener: HeadingListener? = null
     private val rotationMatrix = FloatArray(9)
     private val orientation = FloatArray(3)
+    private val gravity = FloatArray(3)
+    private val geomagnetic = FloatArray(3)
+    private var hasGravity = false
+    private var hasGeomagnetic = false
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
-            if (event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-            SensorManager.getOrientation(rotationMatrix, orientation)
-            val azimuthDegrees = Math.toDegrees(orientation[0].toDouble()).toFloat()
-            val heading = ((azimuthDegrees + 360f) % 360f).roundToInt().toFloat()
-            listener?.onHeading(heading)
+            when {
+                CompassSensorTypes.isRotationVectorType(event.sensor.type) -> {
+                    publishHeadingFromRotationVector(event.values)
+                }
+                event.sensor.type == Sensor.TYPE_ACCELEROMETER -> {
+                    System.arraycopy(event.values, 0, gravity, 0, gravity.size)
+                    hasGravity = true
+                    publishHeadingFromAccelAndMagnetometer()
+                }
+                event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD -> {
+                    System.arraycopy(event.values, 0, geomagnetic, 0, geomagnetic.size)
+                    hasGeomagnetic = true
+                    publishHeadingFromAccelAndMagnetometer()
+                }
+            }
         }
 
         override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
@@ -33,15 +46,52 @@ class AndroidCompassProvider(
 
     override fun start(listener: HeadingListener) {
         this.listener = listener
-        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-            ?: sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR)
-        if (sensor != null) {
-            sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_UI)
+        hasGravity = false
+        hasGeomagnetic = false
+
+        val rotationSensor = CompassSensorTypes.rotationVectorTypes
+            .asSequence()
+            .map { type -> sensorManager.getDefaultSensor(type) }
+            .firstOrNull { it != null }
+
+        if (rotationSensor != null) {
+            sensorManager.registerListener(sensorListener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            return
+        }
+
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        if (accelerometer != null && magnetometer != null) {
+            sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(sensorListener, magnetometer, SensorManager.SENSOR_DELAY_UI)
         }
     }
 
     override fun stop() {
         sensorManager.unregisterListener(sensorListener)
         listener = null
+        hasGravity = false
+        hasGeomagnetic = false
+    }
+
+    private fun publishHeadingFromRotationVector(values: FloatArray) {
+        SensorManager.getRotationMatrixFromVector(rotationMatrix, values)
+        publishHeadingFromRotationMatrix()
+    }
+
+    private fun publishHeadingFromAccelAndMagnetometer() {
+        if (!hasGravity || !hasGeomagnetic) return
+        val inclinationMatrix = FloatArray(9)
+        if (!SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, gravity, geomagnetic)) {
+            return
+        }
+        publishHeadingFromRotationMatrix()
+    }
+
+    private fun publishHeadingFromRotationMatrix() {
+        SensorManager.getOrientation(rotationMatrix, orientation)
+        val azimuthDegrees = Math.toDegrees(orientation[0].toDouble()).toFloat()
+        val heading = ((azimuthDegrees + 360f) % 360f).roundToInt().toFloat()
+        listener?.onHeading(heading)
     }
 }
