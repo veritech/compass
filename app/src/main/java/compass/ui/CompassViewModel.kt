@@ -3,8 +3,9 @@ package compass.ui
 import androidx.lifecycle.ViewModel
 import compass.data.BreadcrumbTracker
 import compass.domain.BearingCalculator
+import compass.domain.BreadcrumbPoint
 import compass.domain.Formatters
-import compass.domain.GpxExporter
+import compass.domain.GpxParser
 import compass.domain.LocationSnapshot
 import compass.provider.CompassProvider
 import compass.provider.LocationProvider
@@ -15,9 +16,10 @@ class CompassViewModel(
     private val compassProvider: CompassProvider,
     private val satelliteProvider: SatelliteProvider,
     private val breadcrumbTracker: BreadcrumbTracker,
+    private val mapsApiKeyConfigured: Boolean,
 ) : ViewModel() {
 
-    var uiState: CompassUiState = CompassUiState()
+    var uiState: CompassUiState = CompassUiState(mapsApiKeyConfigured = mapsApiKeyConfigured)
         private set
 
     private var latestLocation: LocationSnapshot? = null
@@ -52,7 +54,7 @@ class CompassViewModel(
                     altitude = snapshot.altitude.takeIf { snapshot.hasFix },
                     velocityKmh = Formatters.formatVelocityKmh(snapshot.speedMetersPerSecond),
                     hasGpsFix = snapshot.hasFix,
-                    breadcrumbCount = breadcrumbTracker.points().size,
+                    breadcrumbPoints = breadcrumbTracker.points(),
                     bearingToTarget = computeBearing(snapshot),
                 )
             }
@@ -69,19 +71,39 @@ class CompassViewModel(
         satelliteProvider.stop()
     }
 
+    fun setTargetLocation(latitude: Double, longitude: Double) {
+        updateState {
+            copy(
+                targetLatitude = latitude,
+                targetLongitude = longitude,
+                targetLatitudeInput = latitude.toString(),
+                targetLongitudeInput = longitude.toString(),
+                bearingToTarget = computeBearing(
+                    latestLocation,
+                    latitude.toString(),
+                    longitude.toString(),
+                ),
+            )
+        }
+    }
+
     fun updateTargetLatitude(value: String) {
+        val lat = value.toDoubleOrNull()
         updateState {
             copy(
                 targetLatitudeInput = value,
+                targetLatitude = lat,
                 bearingToTarget = computeBearing(latestLocation, value, targetLongitudeInput),
             )
         }
     }
 
     fun updateTargetLongitude(value: String) {
+        val lng = value.toDoubleOrNull()
         updateState {
             copy(
                 targetLongitudeInput = value,
+                targetLongitude = lng,
                 bearingToTarget = computeBearing(latestLocation, targetLatitudeInput, value),
             )
         }
@@ -95,8 +117,15 @@ class CompassViewModel(
     fun startBreadcrumbs() {
         val interval = uiState.breadcrumbIntervalSeconds.toIntOrNull() ?: return
         breadcrumbTracker.configure(interval)
+        breadcrumbTracker.clear()
         breadcrumbTracker.start()
-        updateState { copy(breadcrumbsActive = true, breadcrumbCount = breadcrumbTracker.points().size) }
+        updateState {
+            copy(
+                breadcrumbsActive = true,
+                breadcrumbPoints = breadcrumbTracker.points(),
+                loadedTrailPoints = emptyList(),
+            )
+        }
     }
 
     fun stopBreadcrumbs() {
@@ -104,13 +133,13 @@ class CompassViewModel(
         updateState { copy(breadcrumbsActive = false) }
     }
 
-    fun exportGpx() {
-        val gpx = GpxExporter.export(breadcrumbTracker.points())
-        updateState { copy(gpxExport = gpx) }
+    fun loadGpxTrail(content: String) {
+        val points = GpxParser.parse(content)
+        updateState { copy(loadedTrailPoints = points) }
     }
 
-    fun clearGpxExport() {
-        updateState { copy(gpxExport = null) }
+    fun clearLoadedTrail() {
+        updateState { copy(loadedTrailPoints = emptyList()) }
     }
 
     override fun onCleared() {

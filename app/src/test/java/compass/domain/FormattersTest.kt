@@ -19,4 +19,14 @@ class FormattersTest {
     fun formatCoordinate() {
         assertEquals("51.500000°", Formatters.formatCoordinate(51.5))
     }
+
+    @Test
+    fun cardinalDirectionNorth() {
+        assertEquals("N", Formatters.cardinalDirection(0f))
+    }
+
+    @Test
+    fun cardinalDirectionEast() {
+        assertEquals("E", Formatters.cardinalDirection(90f))
+    }
 }

@@ -13,12 +13,16 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import compass.di.AppContainer
 import compass.ui.theme.CompassTheme
+import dev.jonathan.compass.BuildConfig
 
 class MainActivity : ComponentActivity() {
 
     private val container by lazy { AppContainer(applicationContext) }
     private val viewModel: CompassViewModel by viewModels {
-        CompassViewModelFactory(container)
+        CompassViewModelFactory(
+            container = container,
+            mapsApiKeyConfigured = BuildConfig.MAPS_API_KEY.isNotBlank(),
+        )
     }
 
     private var uiState by mutableStateOf(CompassUiState())
@@ -39,15 +43,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CompassTheme {
-                CompassScreen(
-                    state = uiState,
-                    onTargetLatitudeChange = viewModel::updateTargetLatitude,
-                    onTargetLongitudeChange = viewModel::updateTargetLongitude,
-                    onBreadcrumbIntervalChange = viewModel::updateBreadcrumbInterval,
-                    onStartBreadcrumbs = viewModel::startBreadcrumbs,
-                    onStopBreadcrumbs = viewModel::stopBreadcrumbs,
-                    onExportGpx = viewModel::exportGpx,
-                )
+                CompassApp(state = uiState, viewModel = viewModel)
             }
         }
 
