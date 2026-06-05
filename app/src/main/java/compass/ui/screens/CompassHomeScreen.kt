@@ -56,7 +56,9 @@ fun CompassHomeScreen(
         )
 
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 36.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(

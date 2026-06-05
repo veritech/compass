@@ -17,6 +17,21 @@ class CompassHeadingCalculatorTest {
   }
 
   @Test
+  fun northEastWhenFlatAndTopPointsNorthEast() {
+    val radians = Math.toRadians(34.0)
+    val sin = kotlin.math.sin(radians).toFloat()
+    val cos = kotlin.math.cos(radians).toFloat()
+    val rotationMatrix = floatArrayOf(
+      cos, sin, 0f,
+      -sin, cos, 0f,
+      0f, 0f, 1f,
+    )
+    val heading = CompassHeadingCalculator.headingDegrees(rotationMatrix)
+    assertNotNull(heading)
+    assertEquals(34f, heading!!, 0.5f)
+  }
+
+  @Test
   fun eastWhenFlatAndTopPointsEast() {
     val rotationMatrix = floatArrayOf(
       0f, 1f, 0f,

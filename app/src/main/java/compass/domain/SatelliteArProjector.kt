@@ -30,8 +30,10 @@ object SatelliteArProjector {
     }
 
     /**
-     * Projects a satellite into screen space for a portrait camera view.
-     * Returns null when the satellite is behind the camera or outside the field of view.
+     * Projects a satellite into screen space for a portrait back-camera view.
+     * The rotation matrix must be in the standard Android device frame (camera looks
+     * along device −Z). Returns null when the satellite is behind the camera or
+     * outside the field of view.
      */
     fun project(
         satelliteAzimuthDegrees: Float,

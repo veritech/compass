@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -39,11 +41,13 @@ fun SatelliteArOverlay(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val engine = remember { SatelliteArOverlayEngine() }
+    val currentRotationMatrix by rememberUpdatedState(rotationMatrix)
+    val currentSatellites by rememberUpdatedState(satellites)
 
     Canvas(modifier = modifier.fillMaxSize()) {
         val markers = engine.markers(
-            satellites = satellites,
-            rotationMatrix = rotationMatrix,
+            satellites = currentSatellites,
+            rotationMatrix = currentRotationMatrix,
             screenWidth = size.width,
             screenHeight = size.height,
         )

@@ -1,9 +1,6 @@
 package compass.domain
 
-class SatelliteArOverlayEngine(
-    private val rotationSmoother: RotationMatrixSmoother = RotationMatrixSmoother(),
-    private val positionSmoother: SatelliteArPositionSmoother = SatelliteArPositionSmoother(),
-) {
+class SatelliteArOverlayEngine {
     fun markers(
         satellites: List<SatelliteInfo>,
         rotationMatrix: FloatArray,
@@ -12,20 +9,16 @@ class SatelliteArOverlayEngine(
     ): List<SatelliteArMarker> {
         if (screenWidth <= 0f || screenHeight <= 0f) return emptyList()
 
-        val smoothedRotation = rotationSmoother.smooth(rotationMatrix)
-        return positionSmoother.update(satellites) { satellite ->
-            SatelliteArProjector.project(
+        return satellites.mapNotNull { satellite ->
+            val position = SatelliteArProjector.project(
                 satelliteAzimuthDegrees = satellite.azimuthDegrees,
                 satelliteElevationDegrees = satellite.elevationDegrees,
-                rotationMatrix = smoothedRotation,
+                rotationMatrix = rotationMatrix,
                 screenWidth = screenWidth,
                 screenHeight = screenHeight,
-            )
-        }
-    }
+            ) ?: return@mapNotNull null
 
-    fun reset() {
-        rotationSmoother.reset()
-        positionSmoother.reset()
+            SatelliteArMarker(satellite = satellite, position = position)
+        }
     }
 }
