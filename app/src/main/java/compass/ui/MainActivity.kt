@@ -13,16 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import compass.di.AppContainer
 import compass.ui.theme.CompassTheme
-import dev.jonathan.compass.BuildConfig
 
 class MainActivity : ComponentActivity() {
 
     private val container by lazy { AppContainer(applicationContext) }
     private val viewModel: CompassViewModel by viewModels {
-        CompassViewModelFactory(
-            container = container,
-            mapsApiKeyConfigured = BuildConfig.MAPS_API_KEY.isNotBlank(),
-        )
+        CompassViewModelFactory(container)
     }
 
     private var uiState by mutableStateOf(CompassUiState())

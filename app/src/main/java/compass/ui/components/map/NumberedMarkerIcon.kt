@@ -5,14 +5,16 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 object NumberedMarkerIcon {
-    fun create(context: Context, number: Int, color: Color): BitmapDescriptor {
+    fun createBitmap(context: Context, label: String, color: Color): Bitmap {
         val size = (48 * context.resources.displayMetrics.density).toInt()
         val bitmap = createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -26,8 +28,26 @@ object NumberedMarkerIcon {
         paint.textSize = size * 0.4f
         paint.textAlign = Paint.Align.CENTER
         val textY = size / 2f - (paint.descent() + paint.ascent()) / 2f
-        canvas.drawText(number.toString(), size / 2f, textY, paint)
+        canvas.drawText(label, size / 2f, textY, paint)
 
-        return BitmapDescriptorFactory.fromBitmap(bitmap)
+        return bitmap
+    }
+
+    fun addNumberedMarker(
+        mapView: MapView,
+        context: Context,
+        index: Int,
+        latitude: Double,
+        longitude: Double,
+        color: Color,
+    ) {
+        val marker = Marker(mapView)
+        marker.position = GeoPoint(latitude, longitude)
+        marker.icon = BitmapDrawable(
+            context.resources,
+            createBitmap(context, index.toString(), color),
+        )
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+        mapView.overlays.add(marker)
     }
 }

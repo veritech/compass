@@ -50,7 +50,6 @@ fun TrailScreen(
             currentLongitude = state.longitude,
             recordingPoints = if (state.breadcrumbsActive) state.breadcrumbPoints else emptyList(),
             loadedPoints = state.loadedTrailPoints,
-            mapsApiKeyConfigured = state.mapsApiKeyConfigured,
             modifier = Modifier.fillMaxSize(),
         )
 

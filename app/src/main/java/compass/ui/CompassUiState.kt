@@ -20,5 +20,4 @@ data class CompassUiState(
     val loadedTrailPoints: List<BreadcrumbPoint> = emptyList(),
     val hasLocationPermission: Boolean = false,
     val hasGpsFix: Boolean = false,
-    val mapsApiKeyConfigured: Boolean = false,
 )

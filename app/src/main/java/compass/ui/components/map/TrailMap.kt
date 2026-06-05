@@ -1,29 +1,20 @@
 package compass.ui.components.map
 
-import android.content.Context
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.Polyline
-import com.google.maps.android.compose.rememberCameraPositionState
 import compass.domain.BreadcrumbPoint
+import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Overlay
+import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
 fun TrailMap(
@@ -31,89 +22,77 @@ fun TrailMap(
     currentLongitude: Double?,
     recordingPoints: List<BreadcrumbPoint>,
     loadedPoints: List<BreadcrumbPoint>,
-    mapsApiKeyConfigured: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    if (!mapsApiKeyConfigured) {
-        MapsMissingKeyMessage(modifier)
-        return
-    }
-
     val context = LocalContext.current
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(51.5, -0.12), 14f)
-    }
+    val persistentOverlays = remember { mutableStateOf<List<Overlay>>(emptyList()) }
 
-    val allPoints = remember(recordingPoints, loadedPoints) {
-        recordingPoints + loadedPoints
-    }
-
-    LaunchedEffect(currentLatitude, currentLongitude, allPoints) {
-        val positions = buildList {
-            if (currentLatitude != null && currentLongitude != null) {
-                add(LatLng(currentLatitude, currentLongitude))
+    OsmdroidMapView(
+        modifier = modifier,
+        onMapViewCreated = { mapView ->
+            mapView.setTileSource(TileSourceFactory.MAPNIK)
+            if (persistentOverlays.value.isEmpty()) {
+                val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+                locationOverlay.enableMyLocation()
+                mapView.overlays.add(locationOverlay)
+                persistentOverlays.value = listOf(locationOverlay)
             }
-            allPoints.forEach { point ->
-                add(LatLng(point.latitude, point.longitude))
+        },
+        onMapViewUpdate = { mapView ->
+            val keep = persistentOverlays.value.toSet()
+            mapView.overlays.removeAll { overlay -> overlay !in keep }
+
+            if (loadedPoints.size >= 2) {
+                mapView.overlays.add(
+                    createPolyline(
+                        mapView = mapView,
+                        points = loadedPoints,
+                        color = android.graphics.Color.parseColor("#34C759"),
+                    ),
+                )
             }
-        }
-        when {
-            positions.isEmpty() -> Unit
-            positions.size == 1 -> cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(positions.first(), 15f),
-            )
-            else -> cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngBounds(
-                    positions.fold(LatLngBounds.builder()) { builder, latLng ->
-                        builder.include(latLng)
-                    }.build(),
-                    120,
-                ),
-            )
-        }
-    }
+            if (recordingPoints.size >= 2) {
+                mapView.overlays.add(
+                    createPolyline(
+                        mapView = mapView,
+                        points = recordingPoints,
+                        color = android.graphics.Color.parseColor("#0A84FF"),
+                    ),
+                )
+            }
 
-    GoogleMap(
-        modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        properties = MapProperties(isMyLocationEnabled = true),
-        uiSettings = MapUiSettings(
-            zoomControlsEnabled = true,
-            myLocationButtonEnabled = true,
-        ),
-    ) {
-        if (loadedPoints.size >= 2) {
-            Polyline(
-                points = loadedPoints.map { LatLng(it.latitude, it.longitude) },
-                color = Color(0xFF34C759),
-                width = 8f,
-            )
-        }
-        if (recordingPoints.size >= 2) {
-            Polyline(
-                points = recordingPoints.map { LatLng(it.latitude, it.longitude) },
-                color = Color(0xFF0A84FF),
-                width = 8f,
-            )
-        }
+            loadedPoints.forEachIndexed { index, point ->
+                NumberedMarkerIcon.addNumberedMarker(
+                    mapView = mapView,
+                    context = context,
+                    index = index + 1,
+                    latitude = point.latitude,
+                    longitude = point.longitude,
+                    color = Color(0xFF34C759),
+                )
+            }
+            recordingPoints.forEachIndexed { index, point ->
+                NumberedMarkerIcon.addNumberedMarker(
+                    mapView = mapView,
+                    context = context,
+                    index = index + 1,
+                    latitude = point.latitude,
+                    longitude = point.longitude,
+                    color = Color(0xFF0A84FF),
+                )
+            }
 
-        loadedPoints.forEachIndexed { index, point ->
-            NumberedMarker(
-                context = context,
-                index = index + 1,
-                point = point,
-                color = Color(0xFF34C759),
-            )
-        }
-        recordingPoints.forEachIndexed { index, point ->
-            NumberedMarker(
-                context = context,
-                index = index + 1,
-                point = point,
-                color = Color(0xFF0A84FF),
-            )
-        }
-    }
+            val positions = buildList {
+                if (currentLatitude != null && currentLongitude != null) {
+                    add(GeoPoint(currentLatitude, currentLongitude))
+                }
+                recordingPoints.forEach { add(GeoPoint(it.latitude, it.longitude)) }
+                loadedPoints.forEach { add(GeoPoint(it.latitude, it.longitude)) }
+            }
+            mapView.zoomToPositions(positions)
+            mapView.invalidate()
+        },
+    )
 }
 
 @Composable
@@ -122,98 +101,102 @@ fun BearingMap(
     currentLongitude: Double?,
     targetLatitude: Double?,
     targetLongitude: Double?,
-    mapsApiKeyConfigured: Boolean,
     onMapClick: (Double, Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!mapsApiKeyConfigured) {
-        MapsMissingKeyMessage(modifier)
-        return
-    }
+    val context = LocalContext.current
+    val persistentOverlays = remember { mutableStateOf<List<Overlay>>(emptyList()) }
+    val clickHandler = remember { mutableStateOf<(Double, Double) -> Unit>({ _, _ -> }) }
+    clickHandler.value = onMapClick
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(51.5, -0.12), 14f)
-    }
+    OsmdroidMapView(
+        modifier = modifier,
+        onMapViewCreated = { mapView ->
+            mapView.setTileSource(TileSourceFactory.MAPNIK)
+            if (persistentOverlays.value.isEmpty()) {
+                val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+                locationOverlay.enableMyLocation()
+                val mapEventsOverlay = MapEventsOverlay(
+                    object : MapEventsReceiver {
+                        override fun singleTapConfirmedHelper(geoPoint: GeoPoint?): Boolean {
+                            geoPoint?.let { clickHandler.value(it.latitude, it.longitude) }
+                            return true
+                        }
 
-    LaunchedEffect(currentLatitude, currentLongitude, targetLatitude, targetLongitude) {
-        val positions = buildList {
-            if (currentLatitude != null && currentLongitude != null) {
-                add(LatLng(currentLatitude, currentLongitude))
+                        override fun longPressHelper(geoPoint: GeoPoint?): Boolean = false
+                    },
+                )
+                mapView.overlays.add(locationOverlay)
+                mapView.overlays.add(0, mapEventsOverlay)
+                persistentOverlays.value = listOf(locationOverlay, mapEventsOverlay)
             }
+        },
+        onMapViewUpdate = { mapView ->
+            val keep = persistentOverlays.value.toSet()
+            mapView.overlays.removeAll { overlay -> overlay !in keep }
+
             if (targetLatitude != null && targetLongitude != null) {
-                add(LatLng(targetLatitude, targetLongitude))
+                addTargetMarker(
+                    mapView = mapView,
+                    context = context,
+                    latitude = targetLatitude,
+                    longitude = targetLongitude,
+                )
             }
-        }
-        when {
-            positions.isEmpty() -> Unit
-            positions.size == 1 -> cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngZoom(positions.first(), 14f),
-            )
-            else -> cameraPositionState.animate(
-                CameraUpdateFactory.newLatLngBounds(
-                    positions.fold(LatLngBounds.builder()) { builder, latLng ->
-                        builder.include(latLng)
-                    }.build(),
-                    140,
-                ),
-            )
-        }
-    }
 
-    GoogleMap(
-        modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        properties = MapProperties(isMyLocationEnabled = true),
-        uiSettings = MapUiSettings(
-            zoomControlsEnabled = true,
-            myLocationButtonEnabled = true,
-        ),
-        onMapClick = { latLng -> onMapClick(latLng.latitude, latLng.longitude) },
-    ) {
-        if (targetLatitude != null && targetLongitude != null) {
-            Marker(
-                state = MarkerState(LatLng(targetLatitude, targetLongitude)),
-                title = "Target",
-            )
-        }
-        if (currentLatitude != null && currentLongitude != null &&
-            targetLatitude != null && targetLongitude != null
-        ) {
-            Polyline(
-                points = listOf(
-                    LatLng(currentLatitude, currentLongitude),
-                    LatLng(targetLatitude, targetLongitude),
-                ),
-                color = Color(0xFFFF9500),
-                width = 6f,
-            )
-        }
-    }
-}
+            if (currentLatitude != null && currentLongitude != null &&
+                targetLatitude != null && targetLongitude != null
+            ) {
+                mapView.overlays.add(
+                    createPolyline(
+                        mapView = mapView,
+                        points = listOf(
+                            BreadcrumbPoint(currentLatitude, currentLongitude, 0.0, 0L),
+                            BreadcrumbPoint(targetLatitude, targetLongitude, 0.0, 0L),
+                        ),
+                        color = android.graphics.Color.parseColor("#FF9500"),
+                    ),
+                )
+            }
 
-@Composable
-private fun NumberedMarker(
-    context: Context,
-    index: Int,
-    point: BreadcrumbPoint,
-    color: Color,
-) {
-    val icon = remember(index, point, color) {
-        NumberedMarkerIcon.create(context, index, color)
-    }
-    Marker(
-        state = MarkerState(LatLng(point.latitude, point.longitude)),
-        icon = icon,
-        anchor = androidx.compose.ui.geometry.Offset(0.5f, 0.5f),
+            val positions = buildList {
+                if (currentLatitude != null && currentLongitude != null) {
+                    add(GeoPoint(currentLatitude, currentLongitude))
+                }
+                if (targetLatitude != null && targetLongitude != null) {
+                    add(GeoPoint(targetLatitude, targetLongitude))
+                }
+            }
+            mapView.zoomToPositions(positions, padding = 140)
+            mapView.invalidate()
+        },
     )
 }
 
-@Composable
-private fun MapsMissingKeyMessage(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = "Add MAPS_API_KEY to local.properties to enable maps.",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
+private fun addTargetMarker(
+    mapView: org.osmdroid.views.MapView,
+    context: android.content.Context,
+    latitude: Double,
+    longitude: Double,
+) {
+    val marker = org.osmdroid.views.overlay.Marker(mapView)
+    marker.position = GeoPoint(latitude, longitude)
+    marker.icon = android.graphics.drawable.BitmapDrawable(
+        context.resources,
+        NumberedMarkerIcon.createBitmap(context, "T", Color(0xFFFF9500)),
+    )
+    marker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+    mapView.overlays.add(marker)
+}
+
+private fun createPolyline(
+    mapView: org.osmdroid.views.MapView,
+    points: List<BreadcrumbPoint>,
+    color: Int,
+): Polyline {
+    val polyline = Polyline(mapView)
+    polyline.setPoints(points.map { GeoPoint(it.latitude, it.longitude) })
+    polyline.outlinePaint.color = color
+    polyline.outlinePaint.strokeWidth = 8f
+    return polyline
 }

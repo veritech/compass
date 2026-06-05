@@ -102,7 +102,6 @@ class CompassViewModelTest {
         compassProvider = compassProvider,
         satelliteProvider = satelliteProvider,
         breadcrumbTracker = BreadcrumbTracker(),
-        mapsApiKeyConfigured = false,
     )
 }
 

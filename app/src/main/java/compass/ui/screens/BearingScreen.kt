@@ -34,7 +34,6 @@ fun BearingScreen(
             currentLongitude = state.longitude,
             targetLatitude = state.targetLatitude,
             targetLongitude = state.targetLongitude,
-            mapsApiKeyConfigured = state.mapsApiKeyConfigured,
             onMapClick = onMapTargetPicked,
             modifier = Modifier
                 .fillMaxWidth()

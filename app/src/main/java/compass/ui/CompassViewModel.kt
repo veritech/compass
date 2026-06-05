@@ -3,7 +3,6 @@ package compass.ui
 import androidx.lifecycle.ViewModel
 import compass.data.BreadcrumbTracker
 import compass.domain.BearingCalculator
-import compass.domain.BreadcrumbPoint
 import compass.domain.Formatters
 import compass.domain.GpxParser
 import compass.domain.LocationSnapshot
@@ -16,10 +15,9 @@ class CompassViewModel(
     private val compassProvider: CompassProvider,
     private val satelliteProvider: SatelliteProvider,
     private val breadcrumbTracker: BreadcrumbTracker,
-    private val mapsApiKeyConfigured: Boolean,
 ) : ViewModel() {
 
-    var uiState: CompassUiState = CompassUiState(mapsApiKeyConfigured = mapsApiKeyConfigured)
+    var uiState: CompassUiState = CompassUiState()
         private set
 
     private var latestLocation: LocationSnapshot? = null
