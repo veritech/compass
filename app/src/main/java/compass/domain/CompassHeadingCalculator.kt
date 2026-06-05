@@ -22,18 +22,26 @@ object CompassHeadingCalculator {
         val screenTop = horizontalProjection(rotationMatrix[1], rotationMatrix[4])
         val intoScreen = horizontalProjection(-rotationMatrix[2], -rotationMatrix[5])
 
-        return if (isRelativelyFlat(rotationMatrix)) {
-            screenTop.asHeading()
-        } else {
-            intoScreen.asHeading() ?: screenTop.asHeading()
+        val zUp = abs(rotationMatrix[8])
+        val yUp = abs(rotationMatrix[7])
+
+        return when {
+            zUp > yUp * AXIS_HYSTERESIS_RATIO -> screenTop.asHeading()
+            yUp > zUp * AXIS_HYSTERESIS_RATIO -> intoScreen.asHeading() ?: screenTop.asHeading()
+            screenTop.weight >= intoScreen.weight -> screenTop.asHeading()
+            else -> intoScreen.asHeading() ?: screenTop.asHeading()
         }
     }
 
     /** True when the screen plane is closer to horizontal than vertical. */
     fun isRelativelyFlat(rotationMatrix: FloatArray): Boolean {
         if (rotationMatrix.size < 9) return true
-        return abs(rotationMatrix[8]) > abs(rotationMatrix[7])
+        val zUp = abs(rotationMatrix[8])
+        val yUp = abs(rotationMatrix[7])
+        return zUp > yUp * AXIS_HYSTERESIS_RATIO
     }
+
+    private const val AXIS_HYSTERESIS_RATIO = 1.2f
 
     private data class AxisProjection(val headingDegrees: Float, val weight: Float)
 

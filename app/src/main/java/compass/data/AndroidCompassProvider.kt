@@ -6,11 +6,9 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import compass.domain.CompassHeadingCalculator
-import compass.domain.DeviceTiltDetector
 import compass.domain.HeadingSmoother
 import compass.provider.CompassProvider
 import compass.provider.HeadingListener
-import kotlin.math.roundToInt
 
 class AndroidCompassProvider(
     context: Context,
@@ -19,30 +17,32 @@ class AndroidCompassProvider(
 ) : CompassProvider {
 
     private var listener: HeadingListener? = null
-    private val rotationMatrix = FloatArray(9)
-    private val tiltCorrectedMatrix = FloatArray(9)
+    private val rotationVectorMatrix = FloatArray(9)
+    private val fusedMatrix = FloatArray(9)
     private val inclinationMatrix = FloatArray(9)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
     private var hasGravity = false
     private var hasGeomagnetic = false
-    private var usesRotationVectorSensor = false
+    private var hasRotationVectorMatrix = false
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when {
                 CompassSensorTypes.isMagneticRotationVectorType(event.sensor.type) -> {
-                    publishHeadingFromRotationVector(event.values)
+                    SensorManager.getRotationMatrixFromVector(rotationVectorMatrix, event.values)
+                    hasRotationVectorMatrix = true
+                    publishHeading()
                 }
                 event.sensor.type == Sensor.TYPE_ACCELEROMETER -> {
                     System.arraycopy(event.values, 0, gravity, 0, gravity.size)
                     hasGravity = true
-                    publishHeadingFromAccelAndMagnetometer()
+                    publishHeading()
                 }
                 event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD -> {
                     System.arraycopy(event.values, 0, geomagnetic, 0, geomagnetic.size)
                     hasGeomagnetic = true
-                    publishHeadingFromAccelAndMagnetometer()
+                    publishHeading()
                 }
             }
         }
@@ -55,15 +55,19 @@ class AndroidCompassProvider(
         headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
+        hasRotationVectorMatrix = false
 
         val rotationSensor = CompassSensorTypes.magneticRotationVectorTypes
             .asSequence()
             .map { type -> sensorManager.getDefaultSensor(type) }
             .firstOrNull { it != null }
 
-        usesRotationVectorSensor = rotationSensor != null
         if (rotationSensor != null) {
-            sensorManager.registerListener(sensorListener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(
+                sensorListener,
+                rotationSensor,
+                SensorManager.SENSOR_DELAY_NORMAL,
+            )
         }
 
         registerAccelerometerAndMagnetometer()
@@ -75,57 +79,49 @@ class AndroidCompassProvider(
         headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
-        usesRotationVectorSensor = false
+        hasRotationVectorMatrix = false
     }
 
     private fun registerAccelerometerAndMagnetometer() {
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         if (accelerometer != null) {
-            sensorManager.registerListener(sensorListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(
+                sensorListener,
+                accelerometer,
+                SensorManager.SENSOR_DELAY_NORMAL,
+            )
         }
         if (magnetometer != null) {
-            sensorManager.registerListener(sensorListener, magnetometer, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(
+                sensorListener,
+                magnetometer,
+                SensorManager.SENSOR_DELAY_NORMAL,
+            )
         }
     }
 
-    private fun publishHeadingFromRotationVector(values: FloatArray) {
-        SensorManager.getRotationMatrixFromVector(rotationMatrix, values)
-        publishHeadingFromRotationMatrix()
-    }
-
-    private fun publishHeadingFromAccelAndMagnetometer() {
-        if (!hasGravity || !hasGeomagnetic) return
-        if (usesRotationVectorSensor) return
-        if (!SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, gravity, geomagnetic)) {
-            return
-        }
-        publishHeadingFromRotationMatrix()
-    }
-
-    private fun publishHeadingFromRotationMatrix() {
-        val headingMatrix = headingMatrixForCurrentPose()
+    private fun publishHeading() {
+        val headingMatrix = resolveHeadingMatrix() ?: return
         val rawHeading = CompassHeadingCalculator.headingDegrees(headingMatrix)
             ?: azimuthFromGetOrientation(headingMatrix)
-        listener?.onHeading(headingSmoother.smooth(rawHeading.roundToInt().toFloat()))
+        listener?.onHeading(headingSmoother.smooth(rawHeading))
     }
 
     /**
-     * Geomagnetic rotation vectors omit accelerometer fusion, so when the phone is
-     * flat their tilt estimate is often wrong and compass heading reads ~180° off.
-     * Accelerometer + magnetometer fusion gives the correct flat-table heading.
+     * Prefer accelerometer + magnetometer fusion for all poses. Geomagnetic rotation
+     * vectors omit the accelerometer, which makes flat and portrait headings unstable.
+     * Rotation vector is only used when tilt fusion is unavailable.
      */
-    private fun headingMatrixForCurrentPose(): FloatArray {
+    private fun resolveHeadingMatrix(): FloatArray? {
         if (
-            usesRotationVectorSensor &&
             hasGravity &&
             hasGeomagnetic &&
-            DeviceTiltDetector.isFlat(gravity) &&
-            SensorManager.getRotationMatrix(tiltCorrectedMatrix, inclinationMatrix, gravity, geomagnetic)
+            SensorManager.getRotationMatrix(fusedMatrix, inclinationMatrix, gravity, geomagnetic)
         ) {
-            return tiltCorrectedMatrix
+            return fusedMatrix
         }
-        return rotationMatrix
+        return rotationVectorMatrix.takeIf { hasRotationVectorMatrix }
     }
 
     private fun azimuthFromGetOrientation(rotationMatrix: FloatArray): Float {

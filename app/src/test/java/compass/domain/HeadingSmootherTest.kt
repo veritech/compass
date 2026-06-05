@@ -35,4 +35,21 @@ class HeadingSmootherTest {
         smoother.reset()
         assertEquals(180f, smoother.smooth(180f), 0.01f)
     }
+
+    @Test
+    fun outputDeadbandHoldsHeadingWhenSmoothedChangeIsTiny() {
+        val smoother = HeadingSmoother(
+            alpha = 0.08f,
+            stationaryAlpha = 0.04f,
+            outputDeadbandDegrees = 0.75f,
+        )
+        val first = smoother.smooth(90f)
+        val second = smoother.smooth(90.2f)
+        assertEquals(first, second, 0.01f)
+    }
+
+    @Test
+    fun angularDistanceWrapsAcrossNorth() {
+        assertEquals(20f, HeadingSmoother.angularDistance(350f, 10f), 0.01f)
+    }
 }
