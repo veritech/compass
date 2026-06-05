@@ -39,15 +39,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CompassTheme {
-                CompassScreen(
-                    state = uiState,
-                    onTargetLatitudeChange = viewModel::updateTargetLatitude,
-                    onTargetLongitudeChange = viewModel::updateTargetLongitude,
-                    onBreadcrumbIntervalChange = viewModel::updateBreadcrumbInterval,
-                    onStartBreadcrumbs = viewModel::startBreadcrumbs,
-                    onStopBreadcrumbs = viewModel::stopBreadcrumbs,
-                    onExportGpx = viewModel::exportGpx,
-                )
+                CompassApp(state = uiState, viewModel = viewModel)
             }
         }
 

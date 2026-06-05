@@ -20,12 +20,7 @@ class CompassViewModelTest {
         val locationProvider = FakeLocationProvider()
         val compassProvider = FakeCompassProvider()
         val satelliteProvider = FakeSatelliteProvider()
-        val viewModel = CompassViewModel(
-            locationProvider = locationProvider,
-            compassProvider = compassProvider,
-            satelliteProvider = satelliteProvider,
-            breadcrumbTracker = BreadcrumbTracker(),
-        )
+        val viewModel = createViewModel(locationProvider, compassProvider, satelliteProvider)
 
         var state = CompassUiState()
         viewModel.setOnStateChanged { state = it }
@@ -51,14 +46,9 @@ class CompassViewModelTest {
     }
 
     @Test
-    fun computesBearingWhenTargetCoordinatesProvided() {
+    fun setTargetLocationUpdatesBearing() {
         val locationProvider = FakeLocationProvider()
-        val viewModel = CompassViewModel(
-            locationProvider = locationProvider,
-            compassProvider = FakeCompassProvider(),
-            satelliteProvider = FakeSatelliteProvider(),
-            breadcrumbTracker = BreadcrumbTracker(),
-        )
+        val viewModel = createViewModel(locationProvider)
 
         var state = CompassUiState()
         viewModel.setOnStateChanged { state = it }
@@ -67,21 +57,16 @@ class CompassViewModelTest {
         locationProvider.emit(
             LocationSnapshot(0.0, 0.0, 0.0, null, hasFix = true),
         )
-        viewModel.updateTargetLatitude("1.0")
-        viewModel.updateTargetLongitude("0.0")
+        viewModel.setTargetLocation(1.0, 0.0)
 
+        assertEquals(1.0, state.targetLatitude!!, 0.0001)
         assertNotNull(state.bearingToTarget)
         assertEquals(0.0, state.bearingToTarget!!, 1.0)
     }
 
     @Test
     fun bearingHiddenWithoutTarget() {
-        val viewModel = CompassViewModel(
-            locationProvider = FakeLocationProvider(),
-            compassProvider = FakeCompassProvider(),
-            satelliteProvider = FakeSatelliteProvider(),
-            breadcrumbTracker = BreadcrumbTracker(),
-        )
+        val viewModel = createViewModel(FakeLocationProvider())
 
         var state = CompassUiState()
         viewModel.setOnStateChanged { state = it }
@@ -89,6 +74,35 @@ class CompassViewModelTest {
 
         assertNull(state.bearingToTarget)
     }
+
+    @Test
+    fun loadGpxTrailPopulatesLoadedPoints() {
+        val viewModel = createViewModel(FakeLocationProvider())
+        var state = CompassUiState()
+        viewModel.setOnStateChanged { state = it }
+
+        viewModel.loadGpxTrail(
+            """
+            <gpx><trk><trkseg>
+              <trkpt lat="1.0" lon="2.0"><ele>3.0</ele></trkpt>
+            </trkseg></trk></gpx>
+            """.trimIndent(),
+        )
+
+        assertEquals(1, state.loadedTrailPoints.size)
+        assertEquals(1.0, state.loadedTrailPoints[0].latitude, 0.0001)
+    }
+
+    private fun createViewModel(
+        locationProvider: FakeLocationProvider = FakeLocationProvider(),
+        compassProvider: FakeCompassProvider = FakeCompassProvider(),
+        satelliteProvider: FakeSatelliteProvider = FakeSatelliteProvider(),
+    ): CompassViewModel = CompassViewModel(
+        locationProvider = locationProvider,
+        compassProvider = compassProvider,
+        satelliteProvider = satelliteProvider,
+        breadcrumbTracker = BreadcrumbTracker(),
+    )
 }
 
 private class FakeLocationProvider : LocationProvider {
