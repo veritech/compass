@@ -93,7 +93,18 @@ class AndroidCompassProvider(
     }
 
     private fun publishHeadingFromRotationMatrix() {
-        val rawHeading = CompassHeadingCalculator.headingDegrees(rotationMatrix) ?: return
+        val rawHeading = if (CompassHeadingCalculator.isRelativelyFlat(rotationMatrix)) {
+            azimuthFromGetOrientation(rotationMatrix)
+        } else {
+            CompassHeadingCalculator.headingDegrees(rotationMatrix)
+                ?: azimuthFromGetOrientation(rotationMatrix)
+        }
         listener?.onHeading(headingSmoother.smooth(rawHeading.roundToInt().toFloat()))
+    }
+
+    private fun azimuthFromGetOrientation(rotationMatrix: FloatArray): Float {
+        val orientation = FloatArray(3)
+        SensorManager.getOrientation(rotationMatrix, orientation)
+        return ((Math.toDegrees(orientation[0].toDouble()).toFloat() + 360f) % 360f)
     }
 }

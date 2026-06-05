@@ -6,19 +6,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import compass.domain.SatelliteArProjector
+import compass.domain.SatelliteArOverlayEngine
 import compass.domain.SatelliteInfo
 import dev.jonathan.compass.R
 
 private val InFixColor = Color(0xFF30D158)
 private val VisibleColor = Color(0xCCFFFFFF)
+private val LabelBackground = Color(0x99000000)
 
 @Composable
 fun SatelliteArOverlay(
@@ -26,24 +35,58 @@ fun SatelliteArOverlay(
     rotationMatrix: FloatArray,
     modifier: Modifier = Modifier,
 ) {
-    Canvas(modifier = modifier.fillMaxSize()) {
-        satellites.forEach { satellite ->
-            val position = SatelliteArProjector.project(
-                satelliteAzimuthDegrees = satellite.azimuthDegrees,
-                satelliteElevationDegrees = satellite.elevationDegrees,
-                rotationMatrix = rotationMatrix,
-                screenWidth = size.width,
-                screenHeight = size.height,
-            ) ?: return@forEach
+    val textMeasurer = rememberTextMeasurer()
+    val engine = remember { SatelliteArOverlayEngine() }
 
-            val color = if (satellite.usedInFix) InFixColor else VisibleColor
-            val radius = if (satellite.usedInFix) 14f else 9f
-            drawCircle(color = color, radius = radius, center = position)
+    Canvas(modifier = modifier.fillMaxSize()) {
+        val markers = engine.markers(
+            satellites = satellites,
+            rotationMatrix = rotationMatrix,
+            screenWidth = size.width,
+            screenHeight = size.height,
+        )
+
+        markers.forEach { marker ->
+            val color = if (marker.satellite.usedInFix) InFixColor else VisibleColor
+            val radius = if (marker.satellite.usedInFix) 14f else 9f
+            val center = marker.position
+
+            drawCircle(color = color, radius = radius, center = center)
             drawCircle(
                 color = Color.White,
                 radius = radius,
-                center = position,
+                center = center,
                 style = Stroke(width = 2f),
+            )
+
+            val label = marker.satellite.displayLabel()
+            val textStyle = TextStyle(
+                color = color,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            val textLayout = textMeasurer.measure(label, style = textStyle)
+            val paddingX = 8f
+            val paddingY = 4f
+            val labelWidth = textLayout.size.width + paddingX * 2
+            val labelHeight = textLayout.size.height + paddingY * 2
+            val labelTopLeft = Offset(
+                x = center.x - labelWidth / 2f,
+                y = center.y + radius + 8f,
+            )
+
+            drawRoundRect(
+                color = LabelBackground,
+                topLeft = labelTopLeft,
+                size = Size(labelWidth, labelHeight),
+                cornerRadius = CornerRadius(6f, 6f),
+            )
+            drawText(
+                textLayoutResult = textLayout,
+                topLeft = Offset(
+                    x = labelTopLeft.x + paddingX,
+                    y = labelTopLeft.y + paddingY,
+                ),
             )
         }
     }

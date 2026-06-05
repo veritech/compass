@@ -26,6 +26,9 @@ private val CompassWhite = Color(0xFFF2F2F2)
 private val CompassRed = Color(0xFFFF3B30)
 private val TickGray = Color(0x99FFFFFF)
 
+/** Fraction of the dial used for cardinal labels — inside major tick marks. */
+private const val LABEL_RING_SIZE_FRACTION = 0.64f
+
 @Composable
 fun CompassDial(
     headingDegrees: Float,
@@ -35,7 +38,7 @@ fun CompassDial(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -43,24 +46,17 @@ fun CompassDial(
                 .fillMaxSize()
                 .graphicsLayer { rotationZ = -headingDegrees },
         ) {
-            CardinalLabel("N", Alignment.TopCenter, CompassRed)
-            CardinalLabel("E", Alignment.CenterEnd, CompassWhite)
-            CardinalLabel("S", Alignment.BottomCenter, CompassWhite)
-            CardinalLabel("W", Alignment.CenterStart, CompassWhite)
-        }
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val radius = size.minDimension / 2f * 0.88f
+                val center = Offset(size.width / 2f, size.height / 2f)
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val radius = size.minDimension / 2f * 0.92f
-            val center = Offset(size.width / 2f, size.height / 2f)
+                drawCircle(
+                    color = TickGray,
+                    radius = radius,
+                    center = center,
+                    style = Stroke(width = 2f),
+                )
 
-            drawCircle(
-                color = TickGray,
-                radius = radius,
-                center = center,
-                style = Stroke(width = 2f),
-            )
-
-            rotate(degrees = -headingDegrees, pivot = center) {
                 for (degree in 0 until 360 step 30) {
                     val isMajor = degree % 90 == 0
                     val tickLength = if (isMajor) radius * 0.12f else radius * 0.06f
@@ -83,10 +79,26 @@ fun CompassDial(
                 drawCircle(color = CompassRed, radius = 10f, center = Offset(northX, northY))
             }
 
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(LABEL_RING_SIZE_FRACTION)
+                    .align(Alignment.Center),
+            ) {
+                CardinalLabel("N", Alignment.TopCenter, CompassRed, headingDegrees)
+                CardinalLabel("E", Alignment.CenterEnd, CompassWhite, headingDegrees)
+                CardinalLabel("S", Alignment.BottomCenter, CompassWhite, headingDegrees)
+                CardinalLabel("W", Alignment.CenterStart, CompassWhite, headingDegrees)
+            }
+        }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val radius = size.minDimension / 2f * 0.88f
+            val center = Offset(size.width / 2f, size.height / 2f)
+
             val indicator = Path().apply {
-                moveTo(center.x, center.y - radius - 6f)
-                lineTo(center.x - 12f, center.y - radius + 18f)
-                lineTo(center.x + 12f, center.y - radius + 18f)
+                moveTo(center.x, center.y - radius - 14f)
+                lineTo(center.x - 24f, center.y - radius + 36f)
+                lineTo(center.x + 24f, center.y - radius + 36f)
                 close()
             }
             drawPath(indicator, CompassRed)
@@ -99,18 +111,18 @@ private fun CardinalLabel(
     label: String,
     alignment: Alignment,
     color: Color,
+    headingDegrees: Float,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(6.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = alignment,
     ) {
         Text(
             text = label,
             color = color,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
+            modifier = Modifier.graphicsLayer { rotationZ = headingDegrees },
         )
     }
 }

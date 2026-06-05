@@ -35,7 +35,7 @@ class FormattersTest {
     @Test
     fun formatLatLngLineCombinesLatitudeAndLongitude() {
         assertEquals(
-            "51°30'00\"N 0°07'12\"E",
+            "51°30'00\"N\u00A00°07'12\"E",
             Formatters.formatLatLngLine(51.5, 0.12),
         )
     }

@@ -68,6 +68,29 @@ class CompassHeadingCalculatorTest {
   }
 
   @Test
+  fun flatHeadingIgnoresOppositeIntoScreenAxis() {
+    // Flat, top points north, but into-screen axis would read south if blended.
+    val rotationMatrix = floatArrayOf(
+      1f, 0f, 0f,
+      0f, 1f, 0f,
+      0f, 0f, 1f,
+    )
+    assertTrue(CompassHeadingCalculator.isRelativelyFlat(rotationMatrix))
+    assertEquals(0f, CompassHeadingCalculator.headingDegrees(rotationMatrix)!!, 0.5f)
+  }
+
+  @Test
+  fun uprightHeadingUsesIntoScreenAxis() {
+    val rotationMatrix = floatArrayOf(
+      1f, 0f, 0f,
+      0f, 0f, -1f,
+      0f, 1f, 0f,
+    )
+    assertTrue(!CompassHeadingCalculator.isRelativelyFlat(rotationMatrix))
+    assertEquals(0f, CompassHeadingCalculator.headingDegrees(rotationMatrix)!!, 0.5f)
+  }
+
+  @Test
   fun returnsNullForInvalidMatrix() {
     assertNull(CompassHeadingCalculator.headingDegrees(FloatArray(3)))
   }

@@ -41,7 +41,7 @@ class AndroidOrientationProvider(
             .firstOrNull { it != null }
             ?: return
 
-        sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(sensorListener, sensor, SensorManager.SENSOR_DELAY_UI)
     }
 
     override fun stop() {

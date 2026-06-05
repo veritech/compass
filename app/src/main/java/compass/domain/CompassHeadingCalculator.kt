@@ -1,18 +1,15 @@
 package compass.domain
 
+import kotlin.math.abs
 import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.hypot
-import kotlin.math.sin
 
 /**
  * Tilt-compensated compass heading from a device-to-world rotation matrix.
  *
- * Android's [android.hardware.SensorManager.getOrientation] assumes a mostly
- * flat device. When the phone is held upright the screen-top (+Y) axis points
- * at the sky and azimuth becomes unstable (gimbal lock). This calculator
- * fuses projections of multiple device axes onto the horizontal plane, weighted
- * by how strongly each axis lies in that plane.
+ * When the phone is flat, heading comes from the screen-top (+Y) axis — the same
+ * basis as [android.hardware.SensorManager.getOrientation]. When upright, +Y
+ * points at the sky (gimbal lock) so heading uses the into-screen (−Z) axis instead.
  */
 object CompassHeadingCalculator {
     /**
@@ -24,17 +21,24 @@ object CompassHeadingCalculator {
 
         val screenTop = horizontalProjection(rotationMatrix[1], rotationMatrix[4])
         val intoScreen = horizontalProjection(-rotationMatrix[2], -rotationMatrix[5])
-        val rightEdge = horizontalProjection(rotationMatrix[0], rotationMatrix[3])
 
-        val candidates = listOf(screenTop, intoScreen)
-            .filter { it.weight > 0.01f }
-            .ifEmpty { listOf(rightEdge).filter { it.weight > 0.01f } }
+        return if (isRelativelyFlat(rotationMatrix)) {
+            screenTop.asHeading()
+        } else {
+            intoScreen.asHeading() ?: screenTop.asHeading()
+        }
+    }
 
-        if (candidates.isEmpty()) return null
-        return weightedCircularMean(candidates)
+    /** True when the screen plane is closer to horizontal than vertical. */
+    fun isRelativelyFlat(rotationMatrix: FloatArray): Boolean {
+        if (rotationMatrix.size < 9) return true
+        return abs(rotationMatrix[8]) > abs(rotationMatrix[7])
     }
 
     private data class AxisProjection(val headingDegrees: Float, val weight: Float)
+
+    private fun AxisProjection.asHeading(): Float? =
+        headingDegrees.takeIf { weight > 0.01f }
 
     private fun horizontalProjection(worldEast: Float, worldNorth: Float): AxisProjection {
         val weight = hypot(worldEast, worldNorth)
@@ -46,17 +50,5 @@ object CompassHeadingCalculator {
             Math.toDegrees(azimuthRadians.toDouble()).toFloat() + 360f
             ) % 360f
         return AxisProjection(heading, weight)
-    }
-
-    private fun weightedCircularMean(candidates: List<AxisProjection>): Float {
-        var sumSin = 0f
-        var sumCos = 0f
-        for (candidate in candidates) {
-            val radians = Math.toRadians(candidate.headingDegrees.toDouble())
-            sumSin += candidate.weight * sin(radians).toFloat()
-            sumCos += candidate.weight * cos(radians).toFloat()
-        }
-        val meanRadians = atan2(sumSin, sumCos)
-        return (Math.toDegrees(meanRadians.toDouble()).toFloat() + 360f) % 360f
     }
 }

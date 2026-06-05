@@ -14,7 +14,9 @@ object Formatters {
 
     fun formatLatLngLine(latitude: Double?, longitude: Double?): String {
         if (latitude == null || longitude == null) return "—"
-        return "${formatDmsCoordinate(latitude, isLatitude = true)} ${formatDmsCoordinate(longitude, isLatitude = false)}"
+        val lat = formatDmsCoordinate(latitude, isLatitude = true)
+        val lng = formatDmsCoordinate(longitude, isLatitude = false)
+        return "$lat\u00A0$lng"
     }
 
     fun formatDmsCoordinate(value: Double, isLatitude: Boolean): String {
