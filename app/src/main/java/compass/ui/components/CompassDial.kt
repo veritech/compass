@@ -54,7 +54,7 @@ fun CompassDial(
                     color = TickGray,
                     radius = radius,
                     center = center,
-                    style = Stroke(width = 2f),
+                    style = Stroke(width = 4f),
                 )
 
                 for (degree in 0 until 360 step 30) {
@@ -96,9 +96,9 @@ fun CompassDial(
             val center = Offset(size.width / 2f, size.height / 2f)
 
             val indicator = Path().apply {
-                moveTo(center.x, center.y - radius - 14f)
-                lineTo(center.x - 24f, center.y - radius + 36f)
-                lineTo(center.x + 24f, center.y - radius + 36f)
+                moveTo(center.x, center.y - radius - 54f)
+                lineTo(center.x - 24f, center.y - radius - 4f)
+                lineTo(center.x + 24f, center.y - radius - 4f)
                 close()
             }
             drawPath(indicator, CompassRed)

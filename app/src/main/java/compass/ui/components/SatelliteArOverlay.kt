@@ -26,8 +26,10 @@ import compass.domain.SatelliteInfo
 import dev.jonathan.compass.R
 
 private val InFixColor = Color(0xFF30D158)
-private val VisibleColor = Color(0xCCFFFFFF)
-private val LabelBackground = Color(0x99000000)
+private val InFixGlowColor = Color(0x6630D158)
+private val VisibleColor = Color(0x99FFFFFF)
+private val TrackingLabelBackground = Color(0xCC1A3D22)
+private val VisibleLabelBackground = Color(0x99000000)
 
 @Composable
 fun SatelliteArOverlay(
@@ -47,23 +49,28 @@ fun SatelliteArOverlay(
         )
 
         markers.forEach { marker ->
-            val color = if (marker.satellite.usedInFix) InFixColor else VisibleColor
-            val radius = if (marker.satellite.usedInFix) 14f else 9f
+            val tracking = marker.satellite.usedInFix
+            val color = if (tracking) InFixColor else VisibleColor
+            val radius = if (tracking) 16f else 8f
             val center = marker.position
+
+            if (tracking) {
+                drawCircle(color = InFixGlowColor, radius = radius + 10f, center = center)
+            }
 
             drawCircle(color = color, radius = radius, center = center)
             drawCircle(
-                color = Color.White,
+                color = if (tracking) InFixColor else Color.White,
                 radius = radius,
                 center = center,
-                style = Stroke(width = 2f),
+                style = Stroke(width = if (tracking) 3f else 1.5f),
             )
 
             val label = marker.satellite.displayLabel()
             val textStyle = TextStyle(
-                color = color,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
+                color = if (tracking) Color.White else color,
+                fontSize = if (tracking) 12.sp else 11.sp,
+                fontWeight = if (tracking) FontWeight.Bold else FontWeight.SemiBold,
             )
             val textLayout = textMeasurer.measure(label, style = textStyle)
             val paddingX = 8f
@@ -76,11 +83,20 @@ fun SatelliteArOverlay(
             )
 
             drawRoundRect(
-                color = LabelBackground,
+                color = if (tracking) TrackingLabelBackground else VisibleLabelBackground,
                 topLeft = labelTopLeft,
                 size = Size(labelWidth, labelHeight),
                 cornerRadius = CornerRadius(6f, 6f),
             )
+            if (tracking) {
+                drawRoundRect(
+                    color = InFixColor,
+                    topLeft = labelTopLeft,
+                    size = Size(labelWidth, labelHeight),
+                    cornerRadius = CornerRadius(6f, 6f),
+                    style = Stroke(width = 2f),
+                )
+            }
             drawText(
                 textLayoutResult = textLayout,
                 topLeft = Offset(

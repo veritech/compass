@@ -89,7 +89,7 @@ fun CompassHomeScreen(
             Text(
                 text = Formatters.formatLatLngLine(state.latitude, state.longitude),
                 color = IosPrimaryText,
-                fontSize = 15.sp,
+                fontSize = 18.75.sp,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -103,13 +103,13 @@ fun CompassHomeScreen(
             Text(
                 text = stringResource(R.string.altitude_label),
                 color = IosSecondaryText,
-                fontSize = 12.sp,
+                fontSize = 15.sp,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = state.altitude?.let(Formatters::formatAltitude) ?: "—",
                 color = IosPrimaryText,
-                fontSize = 17.sp,
+                fontSize = 21.25.sp,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
             )
