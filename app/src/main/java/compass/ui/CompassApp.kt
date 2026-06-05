@@ -7,6 +7,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
@@ -25,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import compass.ui.navigation.CompassDestination
 import compass.ui.screens.BearingScreen
 import compass.ui.screens.CompassHomeScreen
+import compass.ui.screens.SatellitesScreen
 import compass.ui.screens.TrailScreen
 import kotlinx.coroutines.launch
 
@@ -44,23 +46,25 @@ fun CompassApp(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            CompassDestination.entries.forEach { destination ->
-                NavigationDrawerItem(
-                    label = { Text(destination.title) },
-                    selected = currentDestination == destination,
-                    onClick = {
-                        scope.launch {
-                            drawerState.close()
-                            navController.navigate(destination.route) {
-                                popUpTo(CompassDestination.COMPASS.route) {
-                                    saveState = true
+            ModalDrawerSheet {
+                CompassDestination.entries.forEach { destination ->
+                    NavigationDrawerItem(
+                        label = { Text(destination.title) },
+                        selected = currentDestination == destination,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                navController.navigate(destination.route) {
+                                    popUpTo(CompassDestination.COMPASS.route) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             }
         },
     ) {
@@ -92,10 +96,10 @@ fun CompassApp(
                 modifier = Modifier.padding(padding),
             ) {
                 composable(CompassDestination.COMPASS.route) {
-                    CompassHomeScreen(
-                        state = state,
-                        onShowSatelliteSkyPlotChange = viewModel::setShowSatelliteSkyPlot,
-                    )
+                    CompassHomeScreen(state = state)
+                }
+                composable(CompassDestination.SATELLITES.route) {
+                    SatellitesScreen(state = state)
                 }
                 composable(CompassDestination.BEARING.route) {
                     BearingScreen(

@@ -14,6 +14,7 @@ class CompassViewModelFactory(
                 locationProvider = container.locationProvider,
                 compassProvider = container.compassProvider,
                 satelliteProvider = container.satelliteProvider,
+                orientationProvider = container.orientationProvider,
                 breadcrumbTracker = container.breadcrumbTracker,
             ) as T
         }

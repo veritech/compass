@@ -19,8 +19,11 @@
     <string name="waiting_for_gps">Waiting for GPS fix…</string>
     <string name="satellite_count_format">%1$d in use</string>
     <string name="satellite_visible_count_format">%1$d visible, %2$d in use</string>
-    <string name="show_satellite_sky_plot">Show satellite sky plot</string>
+    <string name="satellite_view_ar">AR</string>
+    <string name="satellite_view_sky_plot">Sky plot</string>
     <string name="satellite_sky_plot_legend">Green = used for fix · Center = above you · Edge = horizon</string>
+    <string name="satellite_ar_hint">Point at the sky to locate satellites</string>
+    <string name="camera_permission_required">Camera permission is required for satellite AR.</string>
     <string name="tap_map_hint">Tap the map to pick a target location.</string>
     <string name="bearing_value">Bearing: %1$s</string>
     <string name="recording_trail_points">Recording — %1$d points</string>

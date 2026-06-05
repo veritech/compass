@@ -1,6 +1,7 @@
 package compass.ui
 
 import compass.data.BreadcrumbTracker
+import compass.domain.DeviceOrientation
 import compass.domain.LocationSnapshot
 import compass.domain.SatelliteInfo
 import compass.domain.SatelliteStatus
@@ -8,11 +9,14 @@ import compass.provider.CompassProvider
 import compass.provider.HeadingListener
 import compass.provider.LocationListener
 import compass.provider.LocationProvider
+import compass.provider.OrientationListener
+import compass.provider.OrientationProvider
 import compass.provider.SatelliteListener
 import compass.provider.SatelliteProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CompassViewModelTest {
@@ -22,7 +26,13 @@ class CompassViewModelTest {
         val locationProvider = FakeLocationProvider()
         val compassProvider = FakeCompassProvider()
         val satelliteProvider = FakeSatelliteProvider()
-        val viewModel = createViewModel(locationProvider, compassProvider, satelliteProvider)
+        val orientationProvider = FakeOrientationProvider()
+        val viewModel = createViewModel(
+            locationProvider,
+            compassProvider,
+            satelliteProvider,
+            orientationProvider,
+        )
 
         var state = CompassUiState()
         viewModel.setOnStateChanged { state = it }
@@ -57,13 +67,17 @@ class CompassViewModelTest {
     }
 
     @Test
-    fun togglesSatelliteSkyPlot() {
-        val viewModel = createViewModel()
+    fun updatesDeviceRotationMatrixFromOrientationProvider() {
+        val orientationProvider = FakeOrientationProvider()
+        val viewModel = createViewModel(orientationProvider = orientationProvider)
         var state = CompassUiState()
         viewModel.setOnStateChanged { state = it }
 
-        viewModel.setShowSatelliteSkyPlot(true)
-        assertEquals(true, state.showSatelliteSkyPlot)
+        viewModel.onPermissionResult(true)
+        val matrix = floatArrayOf(0f, 1f, 0f, 1f, 0f, 0f, 0f, 0f, 1f)
+        orientationProvider.emit(matrix)
+
+        assertTrue(state.deviceRotationMatrix.contentEquals(matrix))
     }
 
     @Test
@@ -118,10 +132,12 @@ class CompassViewModelTest {
         locationProvider: FakeLocationProvider = FakeLocationProvider(),
         compassProvider: FakeCompassProvider = FakeCompassProvider(),
         satelliteProvider: FakeSatelliteProvider = FakeSatelliteProvider(),
+        orientationProvider: FakeOrientationProvider = FakeOrientationProvider(),
     ): CompassViewModel = CompassViewModel(
         locationProvider = locationProvider,
         compassProvider = compassProvider,
         satelliteProvider = satelliteProvider,
+        orientationProvider = orientationProvider,
         breadcrumbTracker = BreadcrumbTracker(),
     )
 }
@@ -171,5 +187,21 @@ private class FakeSatelliteProvider : SatelliteProvider {
 
     fun emitStatus(status: SatelliteStatus) {
         listener?.onSatelliteStatus(status)
+    }
+}
+
+private class FakeOrientationProvider : OrientationProvider {
+    private var listener: OrientationListener? = null
+
+    override fun start(listener: OrientationListener) {
+        this.listener = listener
+    }
+
+    override fun stop() {
+        listener = null
+    }
+
+    fun emit(rotationMatrix: FloatArray) {
+        listener?.onRotationMatrix(rotationMatrix)
     }
 }

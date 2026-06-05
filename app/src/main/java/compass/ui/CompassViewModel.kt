@@ -8,12 +8,14 @@ import compass.domain.GpxParser
 import compass.domain.LocationSnapshot
 import compass.provider.CompassProvider
 import compass.provider.LocationProvider
+import compass.provider.OrientationProvider
 import compass.provider.SatelliteProvider
 
 class CompassViewModel(
     private val locationProvider: LocationProvider,
     private val compassProvider: CompassProvider,
     private val satelliteProvider: SatelliteProvider,
+    private val orientationProvider: OrientationProvider,
     private val breadcrumbTracker: BreadcrumbTracker,
 ) : ViewModel() {
 
@@ -42,6 +44,10 @@ class CompassViewModel(
             updateState { copy(headingDegrees = heading) }
         }
 
+        orientationProvider.start { rotationMatrix ->
+            updateState { copy(deviceRotationMatrix = rotationMatrix) }
+        }
+
         locationProvider.start { snapshot ->
             latestLocation = snapshot
             breadcrumbTracker.onLocation(snapshot)
@@ -68,14 +74,11 @@ class CompassViewModel(
         }
     }
 
-    fun setShowSatelliteSkyPlot(enabled: Boolean) {
-        updateState { copy(showSatelliteSkyPlot = enabled) }
-    }
-
     fun stopSensors() {
         locationProvider.stop()
         compassProvider.stop()
         satelliteProvider.stop()
+        orientationProvider.stop()
     }
 
     fun setTargetLocation(latitude: Double, longitude: Double) {
