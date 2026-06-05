@@ -92,7 +92,10 @@ fun CompassApp(
                 modifier = Modifier.padding(padding),
             ) {
                 composable(CompassDestination.COMPASS.route) {
-                    CompassHomeScreen(state = state)
+                    CompassHomeScreen(
+                        state = state,
+                        onShowSatelliteSkyPlotChange = viewModel::setShowSatelliteSkyPlot,
+                    )
                 }
                 composable(CompassDestination.BEARING.route) {
                     BearingScreen(

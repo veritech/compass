@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,7 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -34,6 +38,17 @@ fun CompassDial(
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { rotationZ = -headingDegrees },
+        ) {
+            CardinalLabel("N", Alignment.TopCenter, CompassRed)
+            CardinalLabel("E", Alignment.CenterEnd, CompassWhite)
+            CardinalLabel("S", Alignment.BottomCenter, CompassWhite)
+            CardinalLabel("W", Alignment.CenterStart, CompassWhite)
+        }
+
         Canvas(modifier = Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2f * 0.92f
             val center = Offset(size.width / 2f, size.height / 2f)
@@ -76,5 +91,26 @@ fun CompassDial(
             }
             drawPath(indicator, CompassRed)
         }
+    }
+}
+
+@Composable
+private fun CardinalLabel(
+    label: String,
+    alignment: Alignment,
+    color: Color,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(6.dp),
+        contentAlignment = alignment,
+    ) {
+        Text(
+            text = label,
+            color = color,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }

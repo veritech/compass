@@ -1,7 +1,9 @@
 package compass.provider
 
+import compass.domain.SatelliteStatus
+
 fun interface SatelliteListener {
-    fun onSatelliteCount(count: Int)
+    fun onSatelliteStatus(status: SatelliteStatus)
 }
 
 interface SatelliteProvider {

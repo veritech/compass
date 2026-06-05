@@ -7,6 +7,7 @@ import android.location.GnssStatus
 import android.location.LocationManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import compass.domain.SatelliteStatus
 import compass.provider.SatelliteListener
 import compass.provider.SatelliteProvider
 
@@ -19,19 +20,20 @@ class AndroidSatelliteProvider(
 
     private val gnssCallback = object : GnssStatus.Callback() {
         override fun onSatelliteStatusChanged(status: GnssStatus) {
-            var inUse = 0
-            for (index in 0 until status.satelliteCount) {
-                if (status.usedInFix(index)) {
-                    inUse++
-                }
-            }
-            listener?.onSatelliteCount(inUse)
+            val satellites = GnssStatusMapper.map(status)
+            val inFix = satellites.count { it.usedInFix }
+            listener?.onSatelliteStatus(
+                SatelliteStatus(
+                    satellitesInFix = inFix,
+                    satellites = satellites,
+                ),
+            )
         }
     }
 
     override fun start(listener: SatelliteListener) {
         if (!hasLocationPermission()) {
-            listener.onSatelliteCount(0)
+            listener.onSatelliteStatus(SatelliteStatus(satellitesInFix = 0, satellites = emptyList()))
             return
         }
 

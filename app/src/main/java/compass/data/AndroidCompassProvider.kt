@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import compass.domain.HeadingSmoother
 import compass.provider.CompassProvider
 import compass.provider.HeadingListener
 import kotlin.math.roundToInt
@@ -12,6 +13,7 @@ import kotlin.math.roundToInt
 class AndroidCompassProvider(
     context: Context,
     private val sensorManager: SensorManager = context.getSystemService(SensorManager::class.java),
+    private val headingSmoother: HeadingSmoother = HeadingSmoother(),
 ) : CompassProvider {
 
     private var listener: HeadingListener? = null
@@ -46,6 +48,7 @@ class AndroidCompassProvider(
 
     override fun start(listener: HeadingListener) {
         this.listener = listener
+        headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
 
@@ -70,6 +73,7 @@ class AndroidCompassProvider(
     override fun stop() {
         sensorManager.unregisterListener(sensorListener)
         listener = null
+        headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
     }
@@ -91,7 +95,7 @@ class AndroidCompassProvider(
     private fun publishHeadingFromRotationMatrix() {
         SensorManager.getOrientation(rotationMatrix, orientation)
         val azimuthDegrees = Math.toDegrees(orientation[0].toDouble()).toFloat()
-        val heading = ((azimuthDegrees + 360f) % 360f).roundToInt().toFloat()
-        listener?.onHeading(heading)
+        val rawHeading = ((azimuthDegrees + 360f) % 360f).roundToInt().toFloat()
+        listener?.onHeading(headingSmoother.smooth(rawHeading))
     }
 }
