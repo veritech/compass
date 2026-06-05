@@ -3,9 +3,9 @@ package compass.ui
 import androidx.lifecycle.ViewModel
 import compass.data.BreadcrumbTracker
 import compass.domain.BearingCalculator
-import compass.domain.Formatters
 import compass.domain.GpxParser
 import compass.domain.LocationSnapshot
+import compass.provider.CompassCalibrationListener
 import compass.provider.CompassProvider
 import compass.provider.LocationProvider
 import compass.provider.OrientationProvider
@@ -43,6 +43,7 @@ class CompassViewModel(
         compassProvider.start { heading ->
             updateState { copy(headingDegrees = heading) }
         }
+        updateState { copy(hasCompassCalibration = compassProvider.hasCalibration()) }
 
         orientationProvider.start { rotationMatrix ->
             updateState { copy(deviceRotationMatrix = rotationMatrix) }
@@ -56,7 +57,7 @@ class CompassViewModel(
                     latitude = snapshot.latitude.takeIf { snapshot.hasFix },
                     longitude = snapshot.longitude.takeIf { snapshot.hasFix },
                     altitude = snapshot.altitude.takeIf { snapshot.hasFix },
-                    velocityKmh = Formatters.formatVelocityKmh(snapshot.speedMetersPerSecond),
+                    speedMetersPerSecond = snapshot.speedMetersPerSecond?.takeIf { snapshot.hasFix },
                     hasGpsFix = snapshot.hasFix,
                     breadcrumbPoints = breadcrumbTracker.points(),
                     bearingToTarget = computeBearing(snapshot),
@@ -151,6 +152,39 @@ class CompassViewModel(
     fun clearLoadedTrail() {
         updateState { copy(loadedTrailPoints = emptyList()) }
     }
+
+    fun startCompassCalibration() {
+        compassProvider.cancelCalibration()
+        updateState { copy(isCalibrating = true, calibrationProgress = 0f) }
+        compassProvider.startCalibration(
+            object : CompassCalibrationListener {
+                override fun onCalibrationProgress(progress: Float) {
+                    updateState { copy(calibrationProgress = progress.coerceIn(0f, 1f)) }
+                }
+
+                override fun onCalibrationComplete(success: Boolean) {
+                    updateState {
+                        copy(
+                            isCalibrating = false,
+                            calibrationProgress = if (success) 1f else 0f,
+                            hasCompassCalibration = success || hasCompassCalibration,
+                        )
+                    }
+                }
+            },
+        )
+    }
+
+    fun cancelCompassCalibration() {
+        compassProvider.cancelCalibration()
+        updateState {
+            copy(
+                isCalibrating = false,
+                calibrationProgress = 0f,
+            )
+        }
+    }
+
 
     override fun onCleared() {
         stopSensors()

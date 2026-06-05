@@ -2,6 +2,7 @@ package compass.di
 
 import android.content.Context
 import compass.data.AndroidCompassProvider
+import compass.data.CompassCalibrationStore
 import compass.data.AndroidLocationProvider
 import compass.data.AndroidOrientationProvider
 import compass.data.AndroidSatelliteProvider
@@ -15,7 +16,12 @@ import compass.provider.SatelliteProvider
 class AppContainer(context: Context) {
     val locationProvider: LocationProvider = AndroidLocationProvider(context)
     val headingSmoother: HeadingSmoother = HeadingSmoother()
-    val compassProvider: CompassProvider = AndroidCompassProvider(context, headingSmoother = headingSmoother)
+    val calibrationStore: CompassCalibrationStore = CompassCalibrationStore(context)
+    val compassProvider: CompassProvider = AndroidCompassProvider(
+        context,
+        headingSmoother = headingSmoother,
+        calibrationStore = calibrationStore,
+    )
     val satelliteProvider: SatelliteProvider = AndroidSatelliteProvider(context)
     val orientationProvider: OrientationProvider = AndroidOrientationProvider(context)
     val breadcrumbTracker: BreadcrumbTracker = BreadcrumbTracker()

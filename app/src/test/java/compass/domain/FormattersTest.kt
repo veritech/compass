@@ -8,11 +8,7 @@ class FormattersTest {
     @Test
     fun formatVelocityFromMetersPerSecond() {
         assertEquals("36.0 km/h", Formatters.formatVelocityKmh(10f))
-    }
-
-    @Test
-    fun formatVelocityMissingWhenNull() {
-        assertEquals("—", Formatters.formatVelocityKmh(null))
+        assertEquals("10.0 m/s", Formatters.formatVelocityMps(10f))
     }
 
     @Test

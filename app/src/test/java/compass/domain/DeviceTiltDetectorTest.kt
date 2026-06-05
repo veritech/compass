@@ -18,6 +18,17 @@ class DeviceTiltDetectorTest {
     }
 
     @Test
+    fun uprightWhenGravityAlongDeviceY() {
+        assertTrue(DeviceTiltDetector.isUprightPortrait(floatArrayOf(0f, -9.8f, 0f)))
+        assertTrue(DeviceTiltDetector.isUprightPortrait(floatArrayOf(0f, 9.8f, 0f)))
+    }
+
+    @Test
+    fun notUprightWhenFlat() {
+        assertFalse(DeviceTiltDetector.isUprightPortrait(floatArrayOf(0f, 0f, -9.8f)))
+    }
+
+    @Test
     fun notFlatWhenTiltedFortyFiveDegrees() {
         val component = 9.8f * 0.707f
         assertFalse(DeviceTiltDetector.isFlat(floatArrayOf(0f, -component, -component)))

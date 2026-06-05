@@ -6,6 +6,7 @@
     <string name="longitude_label">Longitude</string>
     <string name="altitude_label">Elevation</string>
     <string name="velocity_label">Speed</string>
+    <string name="velocity_toggle_content_description">Speed %1$s. Tap to change units.</string>
     <string name="satellites_label">GPS satellites</string>
     <string name="bearing_label">Bearing to target</string>
     <string name="target_latitude">Target latitude</string>
@@ -18,6 +19,7 @@
     <string name="location_permission_required">Location permission is required for compass and GPS data.</string>
     <string name="waiting_for_gps">Waiting for GPS fix…</string>
     <string name="satellite_count_format">%1$d in use</string>
+    <string name="satellite_tracking_badge_content_description">%1$d satellites in fix</string>
     <string name="satellite_visible_count_format">%1$d visible, %2$d in use</string>
     <string name="satellite_view_ar">AR</string>
     <string name="satellite_view_sky_plot">Sky plot</string>
@@ -29,4 +31,11 @@
     <string name="recording_trail_points">Recording — %1$d points</string>
     <string name="loaded_trail_points">Loaded trail — %1$d points</string>
     <string name="trail_idle_hint">Start tracking or load a GPX trail.</string>
+    <string name="calibrate_compass_title">Calibrate compass</string>
+    <string name="calibrate_compass_instructions">Move the phone in a wide figure-8 pattern, rotating through all three axes. Stay away from metal surfaces and magnets.</string>
+    <string name="calibrate_compass_complete_title">Calibration complete</string>
+    <string name="calibrate_compass_complete_body">Your compass correction has been saved. Try the compass on a flat surface away from metal.</string>
+    <string name="calibrate_compass_progress_percent">%1$d%%</string>
+    <string name="calibrate_compass_done">Done</string>
+    <string name="calibrate_compass_cancel">Cancel</string>
 </resources>

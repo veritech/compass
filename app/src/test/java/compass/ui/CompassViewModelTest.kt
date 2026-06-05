@@ -14,6 +14,7 @@ import compass.provider.OrientationProvider
 import compass.provider.SatelliteListener
 import compass.provider.SatelliteProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -62,8 +63,28 @@ class CompassViewModelTest {
         assertEquals(51.5, state.latitude!!, 0.0001)
         assertEquals(-0.12, state.longitude!!, 0.0001)
         assertEquals(25.0, state.altitude!!, 0.0001)
+        assertEquals(5f, state.speedMetersPerSecond!!, 0.01f)
         assertEquals(1, state.satelliteCount)
         assertEquals(2, state.satellites.size)
+    }
+
+    @Test
+    fun updatesCalibrationProgressFromCompassProvider() {
+        val compassProvider = FakeCompassProvider()
+        val viewModel = createViewModel(compassProvider = compassProvider)
+        var state = CompassUiState()
+        viewModel.setOnStateChanged { state = it }
+
+        viewModel.onPermissionResult(true)
+        viewModel.startCompassCalibration()
+        compassProvider.emitCalibrationProgress(0.4f)
+        assertEquals(0.4f, state.calibrationProgress, 0.01f)
+        assertTrue(state.isCalibrating)
+
+        compassProvider.emitCalibrationComplete(true)
+        assertFalse(state.isCalibrating)
+        assertEquals(1f, state.calibrationProgress, 0.01f)
+        assertTrue(state.hasCompassCalibration)
     }
 
     @Test
@@ -160,6 +181,8 @@ private class FakeLocationProvider : LocationProvider {
 
 private class FakeCompassProvider : CompassProvider {
     private var listener: HeadingListener? = null
+    private var calibrationListener: compass.provider.CompassCalibrationListener? = null
+    var hasCalibration: Boolean = false
 
     override fun start(listener: HeadingListener) {
         this.listener = listener
@@ -167,10 +190,31 @@ private class FakeCompassProvider : CompassProvider {
 
     override fun stop() {
         listener = null
+        calibrationListener = null
     }
+
+    override fun startCalibration(listener: compass.provider.CompassCalibrationListener) {
+        calibrationListener = listener
+    }
+
+    override fun cancelCalibration() {
+        calibrationListener = null
+    }
+
+    override fun hasCalibration(): Boolean = hasCalibration
 
     fun emitHeading(degrees: Float) {
         listener?.onHeading(degrees)
+    }
+
+    fun emitCalibrationProgress(progress: Float) {
+        calibrationListener?.onCalibrationProgress(progress)
+    }
+
+    fun emitCalibrationComplete(success: Boolean) {
+        calibrationListener?.onCalibrationComplete(success)
+        if (success) hasCalibration = true
+        calibrationListener = null
     }
 }
 

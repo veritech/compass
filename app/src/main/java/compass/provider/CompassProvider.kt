@@ -8,4 +8,10 @@ interface CompassProvider {
     fun start(listener: HeadingListener)
 
     fun stop()
+
+    fun startCalibration(listener: CompassCalibrationListener)
+
+    fun cancelCalibration()
+
+    fun hasCalibration(): Boolean
 }

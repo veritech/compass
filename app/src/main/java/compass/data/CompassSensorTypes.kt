@@ -18,4 +18,7 @@ object CompassSensorTypes {
     fun isRotationVectorType(type: Int): Boolean = type in rotationVectorTypes
 
     fun isMagneticRotationVectorType(type: Int): Boolean = type in magneticRotationVectorTypes
+
+    fun isMagnetometerType(type: Int): Boolean =
+        type == Sensor.TYPE_MAGNETIC_FIELD || type == Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED
 }

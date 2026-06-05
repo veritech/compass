@@ -35,9 +35,9 @@ private val HeadingLabelColor = Color(0xB3FFFFFF)
 private const val LABEL_RING_SIZE_FRACTION = 0.64f
 private const val CARDINAL_FONT_SIZE_SP = 27f
 private const val HEADING_RING_FONT_SIZE_SP = 13f
-private const val HEADING_RING_OUTSET_PX = 36f
-private const val NORTH_INDICATOR_TIP_OFFSET_PX = 104f
-private const val NORTH_INDICATOR_BASE_OFFSET_PX = 54f
+private const val HEADING_RING_OUTSET_PX = 46f
+private const val NORTH_INDICATOR_TIP_OFFSET_PX = 114f
+private const val NORTH_INDICATOR_BASE_OFFSET_PX = 64f
 
 @Composable
 fun CompassDial(

@@ -2,17 +2,34 @@
 
 A portrait-orientation Android compass and GPS utility built with Kotlin and Jetpack Compose. The app shows a live heading, position, and elevation, with optional screens for satellite tracking, bearing to a map target, and GPX trail recording.
 
+## Screenshots
+
+### Compass
+Live heading, cardinal direction, coordinates in DMS, and elevation.
+
+![Compass home screen](docs/compass.jpg)
+
+### Satellites
+GNSS sky plot and AR overlay on the camera feed. In-fix satellites are highlighted in green.
+
+| Sky plot | AR view |
+| --- | --- |
+| ![Satellite sky plot](docs/gps-sky.jpg) | ![Satellite AR view](docs/gps-ar.jpg) |
+
 ## Features
 
 ### Compass
 - Live magnetic heading with cardinal direction
 - Tilt-compensated heading that works when the phone is flat on a table or held upright in portrait
 - Animated compass dial with degree ring, cardinal labels, and north indicator
+- Figure-8 magnetometer calibration (drawer → **Calibrate Compass**)
 
 ### Location
 - Latitude and longitude in degrees/minutes/seconds
 - Elevation from GPS
+- Speed shown below elevation when moving above 1 m/s (tap to switch km/h and m/s)
 - GPS fix status
+- Satellite-in-fix count in the app bar when GNSS is tracking
 
 ### Satellites
 - GNSS satellite count, signal strength, and fix usage
@@ -49,15 +66,15 @@ The app targets recent Android releases only (the last two major versions at tim
 
 ## Architecture
 
-- **UI** — Compose screens with a navigation drawer (`Compass`, `Satellites`, `Bearing to Target`, `Trail`)
+- **UI** — Compose screens with a navigation drawer (`Compass`, `Calibrate Compass`, `Satellites`, `Bearing to Target`, `Trail`)
 - **State** — `CompassViewModel` with provider interfaces for compass, location, orientation, and satellites
 - **DI** — `AppContainer` wires concrete Android providers and domain helpers
-- **Domain logic** — pure Kotlin where possible (`CompassHeadingCalculator`, `BearingCalculator`, `GpxParser`, AR projection, formatters)
+- **Domain logic** — pure Kotlin where possible (`CompassHeadingCalculator`, `BearingCalculator`, `GpxParser`, AR projection, formatters, magnetometer calibration)
 - **Tests** — unit tests for domain and data layers; run before committing changes
 
 ### Compass heading
 
-Heading is derived from accelerometer + magnetometer fusion when both sensors are available. This gives stable results in portrait and when the phone lies flat. On devices that expose only `TYPE_GEOMAGNETIC_ROTATION_VECTOR` (such as the Galaxy A16), the rotation vector is used as a fallback. A low-pass heading smoother reduces jitter when the device is stationary.
+Heading is derived from accelerometer + magnetometer fusion when both sensors are available. This gives stable results in portrait and when the phone lies flat. On devices that expose only `TYPE_GEOMAGNETIC_ROTATION_VECTOR` (such as the Galaxy A16), the rotation vector is used as a fallback. A low-pass heading smoother reduces jitter when the device is stationary. Optional figure-8 calibration stores hard- and soft-iron correction for the magnetometer.
 
 ## Build and run
 
@@ -85,6 +102,7 @@ app/src/main/java/compass/
   provider/   Interfaces for testable boundaries
   ui/         Compose screens, components, navigation, theme
   di/         AppContainer dependency wiring
+docs/         Screenshots for the README
 ```
 
 ## License

@@ -17,11 +17,25 @@ object DeviceTiltDetector {
      */
     fun isFlat(gravity: FloatArray, flatThreshold: Float = DEFAULT_FLAT_THRESHOLD): Boolean {
         if (gravity.size < 3) return false
-        val magnitude = hypot(gravity[0].toDouble(), hypot(gravity[1].toDouble(), gravity[2].toDouble()))
-            .toFloat()
+        val magnitude = magnitude(gravity)
         if (magnitude < 1e-3f) return false
         return kotlin.math.abs(gravity[2]) / magnitude >= flatThreshold
     }
 
+    /** True when the phone is held upright in portrait (screen facing the user). */
+    fun isUprightPortrait(
+        gravity: FloatArray,
+        uprightThreshold: Float = DEFAULT_UPRIGHT_THRESHOLD,
+    ): Boolean {
+        if (gravity.size < 3) return false
+        val magnitude = magnitude(gravity)
+        if (magnitude < 1e-3f) return false
+        return kotlin.math.abs(gravity[1]) / magnitude >= uprightThreshold
+    }
+
+    private fun magnitude(gravity: FloatArray): Float =
+        hypot(gravity[0].toDouble(), hypot(gravity[1].toDouble(), gravity[2].toDouble())).toFloat()
+
     const val DEFAULT_FLAT_THRESHOLD = 0.85f
+    const val DEFAULT_UPRIGHT_THRESHOLD = 0.85f
 }

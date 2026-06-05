@@ -16,11 +16,22 @@ object CompassHeadingCalculator {
      * @param rotationMatrix 3×3 row-major matrix mapping device coordinates to world
      *   coordinates (same layout as [android.hardware.SensorManager.getRotationMatrixFromVector]).
      */
-    fun headingDegrees(rotationMatrix: FloatArray): Float? {
+    fun headingDegrees(
+        rotationMatrix: FloatArray,
+        gravity: FloatArray? = null,
+    ): Float? {
         if (rotationMatrix.size < 9) return null
 
         val screenTop = horizontalProjection(rotationMatrix[1], rotationMatrix[4])
         val intoScreen = horizontalProjection(-rotationMatrix[2], -rotationMatrix[5])
+
+        if (gravity != null && gravity.size >= 3) {
+            when {
+                DeviceTiltDetector.isFlat(gravity) -> return screenTop.asHeading()
+                DeviceTiltDetector.isUprightPortrait(gravity) ->
+                    return intoScreen.asHeading() ?: screenTop.asHeading()
+            }
+        }
 
         val zUp = abs(rotationMatrix[8])
         val yUp = abs(rotationMatrix[7])

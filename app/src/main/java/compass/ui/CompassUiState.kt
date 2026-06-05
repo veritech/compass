@@ -10,7 +10,7 @@ data class CompassUiState(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val altitude: Double? = null,
-    val velocityKmh: String = "—",
+    val speedMetersPerSecond: Float? = null,
     val satelliteCount: Int = 0,
     val satellites: List<SatelliteInfo> = emptyList(),
     val targetLatitudeInput: String = "",
@@ -24,6 +24,9 @@ data class CompassUiState(
     val loadedTrailPoints: List<BreadcrumbPoint> = emptyList(),
     val hasLocationPermission: Boolean = false,
     val hasGpsFix: Boolean = false,
+    val isCalibrating: Boolean = false,
+    val calibrationProgress: Float = 0f,
+    val hasCompassCalibration: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -33,7 +36,7 @@ data class CompassUiState(
             latitude == other.latitude &&
             longitude == other.longitude &&
             altitude == other.altitude &&
-            velocityKmh == other.velocityKmh &&
+            speedMetersPerSecond == other.speedMetersPerSecond &&
             satelliteCount == other.satelliteCount &&
             satellites == other.satellites &&
             targetLatitudeInput == other.targetLatitudeInput &&
@@ -46,7 +49,10 @@ data class CompassUiState(
             breadcrumbPoints == other.breadcrumbPoints &&
             loadedTrailPoints == other.loadedTrailPoints &&
             hasLocationPermission == other.hasLocationPermission &&
-            hasGpsFix == other.hasGpsFix
+            hasGpsFix == other.hasGpsFix &&
+            isCalibrating == other.isCalibrating &&
+            calibrationProgress == other.calibrationProgress &&
+            hasCompassCalibration == other.hasCompassCalibration
     }
 
     override fun hashCode(): Int {
@@ -55,7 +61,7 @@ data class CompassUiState(
         result = 31 * result + (latitude?.hashCode() ?: 0)
         result = 31 * result + (longitude?.hashCode() ?: 0)
         result = 31 * result + (altitude?.hashCode() ?: 0)
-        result = 31 * result + velocityKmh.hashCode()
+        result = 31 * result + (speedMetersPerSecond?.hashCode() ?: 0)
         result = 31 * result + satelliteCount
         result = 31 * result + satellites.hashCode()
         result = 31 * result + targetLatitudeInput.hashCode()
@@ -69,6 +75,9 @@ data class CompassUiState(
         result = 31 * result + loadedTrailPoints.hashCode()
         result = 31 * result + hasLocationPermission.hashCode()
         result = 31 * result + hasGpsFix.hashCode()
+        result = 31 * result + isCalibrating.hashCode()
+        result = 31 * result + calibrationProgress.hashCode()
+        result = 31 * result + hasCompassCalibration.hashCode()
         return result
     }
 }

@@ -18,6 +18,12 @@ class CompassSensorTypesTest {
     }
 
     @Test
+    fun recognizesMagnetometerTypes() {
+        assertTrue(CompassSensorTypes.isMagnetometerType(Sensor.TYPE_MAGNETIC_FIELD))
+        assertTrue(CompassSensorTypes.isMagnetometerType(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED))
+    }
+
+    @Test
     fun recognizesGameRotationVector() {
         assertTrue(CompassSensorTypes.isRotationVectorType(Sensor.TYPE_GAME_ROTATION_VECTOR))
     }

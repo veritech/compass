@@ -16,15 +16,20 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import compass.ui.components.SatelliteTrackingBadge
 import compass.ui.navigation.CompassDestination
 import compass.ui.screens.BearingScreen
+import compass.ui.screens.CalibrateCompassScreen
 import compass.ui.screens.CompassHomeScreen
 import compass.ui.screens.SatellitesScreen
 import compass.ui.screens.TrailScreen
@@ -68,6 +73,24 @@ fun CompassApp(
             }
         },
     ) {
+        val onCompassScreen = currentDestination == CompassDestination.COMPASS ||
+            currentDestination == CompassDestination.CALIBRATE
+        val topBarColors = if (onCompassScreen) {
+            TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Black,
+                titleContentColor = Color.White,
+                navigationIconContentColor = Color.White,
+                actionIconContentColor = Color.White,
+            )
+        } else {
+            TopAppBarDefaults.topAppBarColors()
+        }
+        val badgeContentColor = if (onCompassScreen) {
+            Color.White
+        } else {
+            topBarColors.actionIconContentColor
+        }
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -77,15 +100,14 @@ fun CompassApp(
                             Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     },
-                    colors = if (currentDestination == CompassDestination.COMPASS) {
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Black,
-                            titleContentColor = Color.White,
-                            navigationIconContentColor = Color.White,
+                    actions = {
+                        SatelliteTrackingBadge(
+                            satellitesInFix = state.satelliteCount,
+                            contentColor = badgeContentColor,
+                            modifier = Modifier.padding(end = 12.dp),
                         )
-                    } else {
-                        TopAppBarDefaults.topAppBarColors()
                     },
+                    colors = topBarColors,
                 )
             },
             containerColor = if (currentDestination == CompassDestination.COMPASS) Color.Black else Color.Unspecified,
@@ -97,6 +119,28 @@ fun CompassApp(
             ) {
                 composable(CompassDestination.COMPASS.route) {
                     CompassHomeScreen(state = state)
+                }
+                composable(CompassDestination.CALIBRATE.route) {
+                    LaunchedEffect(Unit) {
+                        viewModel.startCompassCalibration()
+                    }
+                    DisposableEffect(Unit) {
+                        onDispose {
+                            if (state.isCalibrating) {
+                                viewModel.cancelCompassCalibration()
+                            }
+                        }
+                    }
+                    CalibrateCompassScreen(
+                        state = state,
+                        onDone = {
+                            navController.popBackStack()
+                        },
+                        onCancel = {
+                            viewModel.cancelCompassCalibration()
+                            navController.popBackStack()
+                        },
+                    )
                 }
                 composable(CompassDestination.SATELLITES.route) {
                     SatellitesScreen(state = state)

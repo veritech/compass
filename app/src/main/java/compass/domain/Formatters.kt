@@ -45,10 +45,9 @@ object Formatters {
 
     fun formatAltitudeDetailed(meters: Double): String = String.format("%.1f m", meters)
 
-    fun formatVelocityKmh(speedMetersPerSecond: Float?): String {
-        if (speedMetersPerSecond == null || speedMetersPerSecond < 0f) {
-            return "—"
-        }
-        return String.format("%.1f km/h", speedMetersPerSecond * 3.6f)
-    }
+    fun formatVelocityKmh(speedMetersPerSecond: Float): String =
+        String.format("%.1f km/h", speedMetersPerSecond * 3.6f)
+
+    fun formatVelocityMps(speedMetersPerSecond: Float): String =
+        String.format("%.1f m/s", speedMetersPerSecond)
 }

@@ -5,6 +5,7 @@ enum class CompassDestination(
     val title: String,
 ) {
     COMPASS("compass", "Compass"),
+    CALIBRATE("calibrate", "Calibrate Compass"),
     SATELLITES("satellites", "Satellites"),
     BEARING("bearing", "Bearing to Target"),
     TRAIL("trail", "Trail"),
