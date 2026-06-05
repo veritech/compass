@@ -23,6 +23,16 @@ class CompassSensorTypesTest {
     }
 
     @Test
+    fun gameRotationVectorIsNotMagnetic() {
+        assertFalse(CompassSensorTypes.isMagneticRotationVectorType(Sensor.TYPE_GAME_ROTATION_VECTOR))
+    }
+
+    @Test
+    fun geomagneticRotationVectorIsMagnetic() {
+        assertTrue(CompassSensorTypes.isMagneticRotationVectorType(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR))
+    }
+
+    @Test
     fun rejectsUnrelatedSensorTypes() {
         assertFalse(CompassSensorTypes.isRotationVectorType(Sensor.TYPE_ACCELEROMETER))
         assertFalse(CompassSensorTypes.isRotationVectorType(Sensor.TYPE_MAGNETIC_FIELD))

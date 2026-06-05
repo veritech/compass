@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import compass.domain.CompassHeadingCalculator
 import compass.domain.HeadingSmoother
 import compass.provider.CompassProvider
 import compass.provider.HeadingListener
@@ -18,7 +19,6 @@ class AndroidCompassProvider(
 
     private var listener: HeadingListener? = null
     private val rotationMatrix = FloatArray(9)
-    private val orientation = FloatArray(3)
     private val gravity = FloatArray(3)
     private val geomagnetic = FloatArray(3)
     private var hasGravity = false
@@ -27,7 +27,7 @@ class AndroidCompassProvider(
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when {
-                CompassSensorTypes.isRotationVectorType(event.sensor.type) -> {
+                CompassSensorTypes.isMagneticRotationVectorType(event.sensor.type) -> {
                     publishHeadingFromRotationVector(event.values)
                 }
                 event.sensor.type == Sensor.TYPE_ACCELEROMETER -> {
@@ -52,7 +52,7 @@ class AndroidCompassProvider(
         hasGravity = false
         hasGeomagnetic = false
 
-        val rotationSensor = CompassSensorTypes.rotationVectorTypes
+        val rotationSensor = CompassSensorTypes.magneticRotationVectorTypes
             .asSequence()
             .map { type -> sensorManager.getDefaultSensor(type) }
             .firstOrNull { it != null }
@@ -93,9 +93,7 @@ class AndroidCompassProvider(
     }
 
     private fun publishHeadingFromRotationMatrix() {
-        SensorManager.getOrientation(rotationMatrix, orientation)
-        val azimuthDegrees = Math.toDegrees(orientation[0].toDouble()).toFloat()
-        val rawHeading = ((azimuthDegrees + 360f) % 360f).roundToInt().toFloat()
-        listener?.onHeading(headingSmoother.smooth(rawHeading))
+        val rawHeading = CompassHeadingCalculator.headingDegrees(rotationMatrix) ?: return
+        listener?.onHeading(headingSmoother.smooth(rawHeading.roundToInt().toFloat()))
     }
 }

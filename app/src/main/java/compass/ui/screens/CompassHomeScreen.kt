@@ -1,7 +1,6 @@
 package compass.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.jonathan.compass.R
@@ -42,6 +42,7 @@ fun CompassHomeScreen(
             Text(
                 text = stringResource(R.string.location_permission_required),
                 color = Color(0xFFFF453A),
+                textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
         }
@@ -53,62 +54,60 @@ fun CompassHomeScreen(
                 .weight(1f),
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = Formatters.formatHeading(state.headingDegrees),
-            color = IosPrimaryText,
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Thin,
-        )
-        Text(
-            text = Formatters.cardinalDirection(state.headingDegrees),
-            color = IosSecondaryText,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Text(
+                text = Formatters.formatHeading(state.headingDegrees),
+                color = IosPrimaryText,
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Thin,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = Formatters.cardinalDirection(state.headingDegrees),
+                color = IosSecondaryText,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             if (!state.hasGpsFix) {
                 Text(
                     text = stringResource(R.string.waiting_for_gps),
                     color = IosSecondaryText,
                     fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            CoordinateLine(
-                label = stringResource(R.string.latitude_label),
-                value = state.latitude?.let(Formatters::formatCoordinate) ?: "—",
+
+            Text(
+                text = Formatters.formatLatLngLine(state.latitude, state.longitude),
+                color = IosPrimaryText,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                textAlign = TextAlign.Center,
             )
-            CoordinateLine(
-                label = stringResource(R.string.longitude_label),
-                value = state.longitude?.let(Formatters::formatCoordinate) ?: "—",
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(R.string.altitude_label),
+                color = IosSecondaryText,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = state.altitude?.let(Formatters::formatAltitude) ?: "—",
+                color = IosPrimaryText,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Normal,
+                textAlign = TextAlign.Center,
             )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        CoordinateLine(
-            label = stringResource(R.string.altitude_label),
-            value = state.altitude?.let(Formatters::formatAltitude) ?: "—",
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun CoordinateLine(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(text = label, color = IosSecondaryText, fontSize = 12.sp)
-        Text(text = value, color = IosPrimaryText, fontSize = 17.sp, fontWeight = FontWeight.Normal)
     }
 }
