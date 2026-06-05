@@ -13,5 +13,7 @@ interface CompassProvider {
 
     fun cancelCalibration()
 
+    fun clearCalibration()
+
     fun hasCalibration(): Boolean
 }

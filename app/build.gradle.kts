@@ -1,3 +1,24 @@
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+fun gitCommitHash(rootDir: File): String {
+    return try {
+        ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            .directory(rootDir)
+            .redirectErrorStream(true)
+            .start()
+            .inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
+            .ifEmpty { "unknown" }
+    } catch (_: Exception) {
+        "unknown"
+    }
+}
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,12 +36,21 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        val buildTime = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
+        val commitHash = gitCommitHash(rootProject.rootDir)
+        buildConfigField("String", "BUILD_TIME", "\"$buildTime\"")
+        buildConfigField("String", "GIT_COMMIT", "\"$commitHash\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BUILD_VARIANT", "\"debug\"")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "BUILD_VARIANT", "\"release\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -39,6 +69,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

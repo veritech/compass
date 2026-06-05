@@ -5,8 +5,6 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import compass.domain.CompassHeadingCalculator
-import compass.domain.DeviceTiltDetector
 import compass.domain.HeadingSmoother
 import compass.domain.MagnetometerCalibration
 import compass.domain.MagnetometerCalibrationBuilder
@@ -24,9 +22,8 @@ class AndroidCompassProvider(
     private var listener: HeadingListener? = null
     private var calibrationListener: CompassCalibrationListener? = null
     private val calibrationBuilder = MagnetometerCalibrationBuilder()
-    private var activeCalibration: MagnetometerCalibration? = calibrationStore.load()
+    private var activeCalibration: MagnetometerCalibration? = loadStoredCalibration()
 
-    private val rotationVectorMatrix = FloatArray(9)
     private val fusedMatrix = FloatArray(9)
     private val remappedMatrix = FloatArray(9)
     private val inclinationMatrix = FloatArray(9)
@@ -34,18 +31,12 @@ class AndroidCompassProvider(
     private val geomagnetic = FloatArray(3)
     private var hasGravity = false
     private var hasGeomagnetic = false
-    private var hasRotationVectorMatrix = false
 
     private var magnetometerSensor: Sensor? = null
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             when {
-                CompassSensorTypes.isMagneticRotationVectorType(event.sensor.type) -> {
-                    SensorManager.getRotationMatrixFromVector(rotationVectorMatrix, event.values)
-                    hasRotationVectorMatrix = true
-                    publishHeading()
-                }
                 event.sensor.type == Sensor.TYPE_ACCELEROMETER -> {
                     System.arraycopy(event.values, 0, gravity, 0, gravity.size)
                     hasGravity = true
@@ -65,20 +56,6 @@ class AndroidCompassProvider(
         headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
-        hasRotationVectorMatrix = false
-
-        val rotationSensor = CompassSensorTypes.magneticRotationVectorTypes
-            .asSequence()
-            .map { type -> sensorManager.getDefaultSensor(type) }
-            .firstOrNull { it != null }
-
-        if (rotationSensor != null) {
-            sensorManager.registerListener(
-                sensorListener,
-                rotationSensor,
-                SensorManager.SENSOR_DELAY_NORMAL,
-            )
-        }
 
         registerAccelerometer()
         registerMagnetometer()
@@ -92,7 +69,6 @@ class AndroidCompassProvider(
         headingSmoother.reset()
         hasGravity = false
         hasGeomagnetic = false
-        hasRotationVectorMatrix = false
         magnetometerSensor = null
     }
 
@@ -108,7 +84,21 @@ class AndroidCompassProvider(
         registerMagnetometer()
     }
 
+    override fun clearCalibration() {
+        activeCalibration = null
+        calibrationStore.clear()
+        headingSmoother.reset()
+        registerMagnetometer()
+    }
+
     override fun hasCalibration(): Boolean = activeCalibration != null
+
+    private fun loadStoredCalibration(): MagnetometerCalibration? {
+        val stored = calibrationStore.load() ?: return null
+        if (stored.isPlausible()) return stored
+        calibrationStore.clear()
+        return null
+    }
 
     private fun registerAccelerometer() {
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
@@ -153,7 +143,7 @@ class AndroidCompassProvider(
         listener.onCalibrationProgress(calibrationBuilder.progress())
         if (!calibrationBuilder.isComplete()) return
 
-        val calibration = calibrationBuilder.build()
+        val calibration = calibrationBuilder.build()?.takeIf { it.isPlausible() }
         calibrationListener = null
         calibrationBuilder.reset()
         if (calibration == null) {
@@ -176,54 +166,12 @@ class AndroidCompassProvider(
 
     private fun publishHeading() {
         if (calibrationListener != null) return
-        val headingMatrix = resolveHeadingMatrix() ?: return
-        val gravitySnapshot = gravity.takeIf { hasGravity }
-        val rawHeading = computeRawHeading(headingMatrix, gravitySnapshot)
+        if (!hasGravity || !hasGeomagnetic) return
+        if (!SensorManager.getRotationMatrix(fusedMatrix, inclinationMatrix, gravity, geomagnetic)) {
+            return
+        }
+
+        val rawHeading = CompassOrientation.azimuthDegrees(fusedMatrix, remappedMatrix)
         listener?.onHeading(headingSmoother.smooth(rawHeading))
-    }
-
-    private fun computeRawHeading(headingMatrix: FloatArray, gravitySnapshot: FloatArray?): Float {
-        if (gravitySnapshot != null && DeviceTiltDetector.isFlat(gravitySnapshot)) {
-            return azimuthFromGetOrientation(headingMatrix)
-        }
-        return CompassHeadingCalculator.headingDegrees(headingMatrix, gravitySnapshot)
-            ?: azimuthFromGetOrientation(headingMatrix)
-    }
-
-    private fun resolveHeadingMatrix(): FloatArray? {
-        if (hasGravity && hasGeomagnetic && DeviceTiltDetector.isFlat(gravity)) {
-            if (SensorManager.getRotationMatrix(fusedMatrix, inclinationMatrix, gravity, geomagnetic)) {
-                return fusedMatrix
-            }
-        }
-        if (hasRotationVectorMatrix) {
-            return rotationVectorMatrix
-        }
-        if (
-            hasGravity &&
-            hasGeomagnetic &&
-            SensorManager.getRotationMatrix(fusedMatrix, inclinationMatrix, gravity, geomagnetic)
-        ) {
-            return fusedMatrix
-        }
-        return null
-    }
-
-    private fun azimuthFromGetOrientation(rotationMatrix: FloatArray): Float {
-        val matrix = if (
-            SensorManager.remapCoordinateSystem(
-                rotationMatrix,
-                SensorManager.AXIS_X,
-                SensorManager.AXIS_Y,
-                remappedMatrix,
-            )
-        ) {
-            remappedMatrix
-        } else {
-            rotationMatrix
-        }
-        val orientation = FloatArray(3)
-        SensorManager.getOrientation(matrix, orientation)
-        return ((Math.toDegrees(orientation[0].toDouble()).toFloat() + 360f) % 360f)
     }
 }

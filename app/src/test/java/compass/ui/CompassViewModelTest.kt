@@ -201,6 +201,11 @@ private class FakeCompassProvider : CompassProvider {
         calibrationListener = null
     }
 
+    override fun clearCalibration() {
+        hasCalibration = false
+        calibrationListener = null
+    }
+
     override fun hasCalibration(): Boolean = hasCalibration
 
     fun emitHeading(degrees: Float) {

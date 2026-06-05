@@ -185,6 +185,11 @@ class CompassViewModel(
         }
     }
 
+    fun clearCompassCalibration() {
+        compassProvider.clearCalibration()
+        updateState { copy(hasCompassCalibration = false, calibrationProgress = 0f) }
+    }
+
 
     override fun onCleared() {
         stopSensors()

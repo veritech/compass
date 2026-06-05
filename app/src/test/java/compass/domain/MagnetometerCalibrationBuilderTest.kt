@@ -48,6 +48,20 @@ class MagnetometerCalibrationBuilderTest {
     }
 
     @Test
+    fun builtCalibrationIsPlausible() {
+        val builder = MagnetometerCalibrationBuilder(minSamples = 40, targetAxisRangeUt = 20f)
+        repeat(50) { step ->
+            val angle = step * 0.35f
+            builder.addSample(
+                25f * kotlin.math.cos(angle),
+                25f * kotlin.math.sin(angle),
+                20f * kotlin.math.cos(angle + 0.8f),
+            )
+        }
+        assertNotNull(builder.build()?.isPlausible())
+    }
+
+    @Test
     fun applyRemovesHardIronOffset() {
         val calibration = MagnetometerCalibration(
             offsetX = 10f,

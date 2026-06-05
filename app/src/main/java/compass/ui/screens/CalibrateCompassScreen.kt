@@ -38,6 +38,7 @@ fun CalibrateCompassScreen(
     state: CompassUiState,
     onDone: () -> Unit,
     onCancel: () -> Unit,
+    onClearSavedCalibration: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val progress = state.calibrationProgress.coerceIn(0f, 1f)
@@ -139,6 +140,15 @@ fun CalibrateCompassScreen(
                 ),
             ) {
                 Text(stringResource(R.string.calibrate_compass_done))
+            }
+
+            if (state.hasCompassCalibration) {
+                TextButton(onClick = onClearSavedCalibration) {
+                    Text(
+                        text = stringResource(R.string.calibrate_compass_clear),
+                        color = SecondaryText,
+                    )
+                }
             }
 
             TextButton(onClick = onCancel) {

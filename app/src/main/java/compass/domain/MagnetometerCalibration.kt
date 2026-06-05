@@ -21,7 +21,22 @@ data class MagnetometerCalibration(
         )
     }
 
+    fun isPlausible(): Boolean {
+        if (!scaleX.isFinite() || !scaleY.isFinite() || !scaleZ.isFinite()) return false
+        if (scaleX !in MIN_SCALE..MAX_SCALE) return false
+        if (scaleY !in MIN_SCALE..MAX_SCALE) return false
+        if (scaleZ !in MIN_SCALE..MAX_SCALE) return false
+        val offsetMagnitude = kotlin.math.hypot(
+            offsetX.toDouble(),
+            kotlin.math.hypot(offsetY.toDouble(), offsetZ.toDouble()),
+        ).toFloat()
+        return offsetMagnitude <= MAX_OFFSET_UT
+    }
+
     companion object {
+        const val MIN_SCALE = 0.35f
+        const val MAX_SCALE = 2.75f
+        const val MAX_OFFSET_UT = 120f
         val NONE = MagnetometerCalibration(
             offsetX = 0f,
             offsetY = 0f,

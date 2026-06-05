@@ -1,8 +1,13 @@
 package compass.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,11 +26,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import dev.jonathan.compass.R
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import compass.ui.components.DrawerBuildInfo
 import compass.ui.components.SatelliteTrackingBadge
 import compass.ui.navigation.CompassDestination
 import compass.ui.screens.BearingScreen
@@ -52,14 +60,13 @@ fun CompassApp(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                CompassDestination.entries.forEach { destination ->
-                    NavigationDrawerItem(
-                        label = { Text(destination.title) },
-                        selected = currentDestination == destination,
+                Column(modifier = Modifier.fillMaxHeight()) {
+                    Button(
                         onClick = {
+                            viewModel.clearCompassCalibration()
                             scope.launch {
                                 drawerState.close()
-                                navController.navigate(destination.route) {
+                                navController.navigate(CompassDestination.CALIBRATE.route) {
                                     popUpTo(CompassDestination.COMPASS.route) {
                                         saveState = true
                                     }
@@ -68,7 +75,36 @@ fun CompassApp(
                                 }
                             }
                         },
-                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Text(stringResource(R.string.calibrate_compass_menu_button))
+                    }
+
+                    CompassDestination.entries
+                        .filter { destination -> destination != CompassDestination.CALIBRATE }
+                        .forEach { destination ->
+                            NavigationDrawerItem(
+                                label = { Text(destination.title) },
+                                selected = currentDestination == destination,
+                                onClick = {
+                                    scope.launch {
+                                        drawerState.close()
+                                        navController.navigate(destination.route) {
+                                            popUpTo(CompassDestination.COMPASS.route) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                            )
+                        }
+
+                    Spacer(modifier = Modifier.weight(1f))
+                    DrawerBuildInfo()
                 }
             }
         },
@@ -139,6 +175,9 @@ fun CompassApp(
                         onCancel = {
                             viewModel.cancelCompassCalibration()
                             navController.popBackStack()
+                        },
+                        onClearSavedCalibration = {
+                            viewModel.clearCompassCalibration()
                         },
                     )
                 }
